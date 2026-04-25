@@ -3,8 +3,8 @@ export default function Hero() {
     <section className="hero">
       <div className="hero-background">
         <img 
-          src="https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=1200&q=80" 
-          alt="Слонечници с пчели" 
+          src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
+          alt="Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница"
           className="hero-image"
         />
         <div className="hero-overlay"></div>

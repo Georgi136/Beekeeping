@@ -9,7 +9,7 @@ export default function About() {
 
         <div className="about-hero-image">
           <img 
-            src="https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=1200&q=80" 
+            src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
             alt="Пчеларски магазин САКИ - Натурален пчелен мед и инвентар" 
           />
         </div>
