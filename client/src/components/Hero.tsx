@@ -24,7 +24,7 @@ export default function Hero() {
           </div>
         </div>
         <div className="hero-visual">
-          <div className="bee-icon">🐝</div>
+          <img src="/big-bee.png" alt="Пчела" className="bee-icon" />
         </div>
       </div>
 
@@ -106,7 +106,9 @@ export default function Hero() {
         }
 
         .bee-icon {
-          font-size: 12rem;
+          max-width: 300px;
+          width: 100%;
+          height: auto;
           animation: float 3s ease-in-out infinite;
         }
 
@@ -143,7 +145,7 @@ export default function Hero() {
           }
 
           .bee-icon {
-            font-size: 8rem;
+            max-width: 200px;
           }
         }
       `}</style>

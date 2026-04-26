@@ -160,7 +160,7 @@ Error generating stack: `+o.message+`
             visibility: visible;
           }
         }
-      `})]})}function Vf(){return f.jsxs("section",{className:"hero",children:[f.jsxs("div",{className:"hero-background",children:[f.jsx("img",{src:"https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",alt:"Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница",className:"hero-image"}),f.jsx("div",{className:"hero-overlay"}),f.jsx("div",{className:"hero-pattern"})]}),f.jsxs("div",{className:"container hero-content",children:[f.jsxs("div",{className:"hero-text",children:[f.jsxs("h1",{className:"hero-title",children:["Пчеларски Магазин ",f.jsx("span",{className:"highlight",children:"САКИ"})]}),f.jsx("p",{className:"hero-subtitle",children:"Професионално оборудване и консумативи за пчелари в Дупница"}),f.jsxs("div",{className:"hero-cta",children:[f.jsx("a",{href:"#products",className:"btn btn-primary",children:"Разгледайте продукти"}),f.jsx("a",{href:"#contact",className:"btn btn-secondary",children:"Свържете се с нас"})]})]}),f.jsx("div",{className:"hero-visual",children:f.jsx("div",{className:"bee-icon",children:"🐝"})})]}),f.jsx("style",{children:`
+      `})]})}function Vf(){return f.jsxs("section",{className:"hero",children:[f.jsxs("div",{className:"hero-background",children:[f.jsx("img",{src:"https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",alt:"Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница",className:"hero-image"}),f.jsx("div",{className:"hero-overlay"}),f.jsx("div",{className:"hero-pattern"})]}),f.jsxs("div",{className:"container hero-content",children:[f.jsxs("div",{className:"hero-text",children:[f.jsxs("h1",{className:"hero-title",children:["Пчеларски Магазин ",f.jsx("span",{className:"highlight",children:"САКИ"})]}),f.jsx("p",{className:"hero-subtitle",children:"Професионално оборудване и консумативи за пчелари в Дупница"}),f.jsxs("div",{className:"hero-cta",children:[f.jsx("a",{href:"#products",className:"btn btn-primary",children:"Разгледайте продукти"}),f.jsx("a",{href:"#contact",className:"btn btn-secondary",children:"Свържете се с нас"})]})]}),f.jsx("div",{className:"hero-visual",children:f.jsx("img",{src:"/big-bee.png",alt:"Пчела",className:"bee-icon"})})]}),f.jsx("style",{children:`
         .hero {
           position: relative;
           padding: 6rem 0;
@@ -238,7 +238,9 @@ Error generating stack: `+o.message+`
         }
 
         .bee-icon {
-          font-size: 12rem;
+          max-width: 300px;
+          width: 100%;
+          height: auto;
           animation: float 3s ease-in-out infinite;
         }
 
@@ -275,7 +277,7 @@ Error generating stack: `+o.message+`
           }
 
           .bee-icon {
-            font-size: 8rem;
+            max-width: 200px;
           }
         }
       `})]})}function Bf(){return f.jsxs("section",{id:"about",className:"section about",children:[f.jsxs("div",{className:"container",children:[f.jsx("h2",{className:"section-title",children:"За нас"}),f.jsx("p",{className:"section-subtitle",children:"Ние сме вашият надежден партньор в света на пчеларството"}),f.jsx("div",{className:"about-hero-image",children:f.jsx("img",{src:"https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",alt:"Пчеларски магазин САКИ - Натурален пчелен мед и инвентар"})}),f.jsxs("div",{className:"about-grid",children:[f.jsxs("div",{className:"about-card",children:[f.jsx("div",{className:"about-icon",children:"🏪"}),f.jsx("h3",{children:"Магазин в Дупница"}),f.jsx("p",{children:"Намираме се на Кооперативния пазар в гр. Дупница, Павилион номер 5, където можете да разгледате и закупите всички необходими консумативи."})]}),f.jsxs("div",{className:"about-card",children:[f.jsx("div",{className:"about-icon",children:"📦"}),f.jsx("h3",{children:"Богат асортимент"}),f.jsx("p",{children:"Предлагаме пчелни кошери, рамки, восъчни основи, защитно облекло и всичко необходимо за пчеларството."})]}),f.jsxs("div",{className:"about-card",children:[f.jsx("div",{className:"about-icon",children:"💡"}),f.jsx("h3",{children:"Професионални съвети"}),f.jsx("p",{children:"Нашият екип има дългогодишен опит в пчеларството и винаги е готов да ви помогне с експертни съвети."})]}),f.jsxs("div",{className:"about-card",children:[f.jsx("div",{className:"about-icon",children:"🚚"}),f.jsx("h3",{children:"Бърза доставка"}),f.jsx("p",{children:"Осигуряваме бърза и надеждна доставка на поръчаните продукти до всяка точка на страната."})]})]}),f.jsx("div",{className:"about-info",children:f.jsxs("div",{className:"about-info-content",children:[f.jsx("h3",{children:"Защо да изберете САКИ?"}),f.jsxs("ul",{className:"about-list",children:[f.jsx("li",{children:"Производство и търговия с пчеларски инвентар"}),f.jsx("li",{children:"Пчелен мед от региона на Дупница"}),f.jsx("li",{children:"Качествени продукти от доказани производители"}),f.jsx("li",{children:"Конкурентни цени и гъвкави отстъпки"}),f.jsx("li",{children:"Индивидуален подход към всеки клиент"})]})]})})]}),f.jsx("style",{children:`
