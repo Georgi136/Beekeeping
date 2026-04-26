@@ -5,8 +5,7 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <div className="footer-logo">
-              <span className="logo-icon">🐝</span>
-              <span className="logo-text">САКИ</span>
+                  <img src="/bee-logo.jpg" alt="САКИ Лого" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
             </div>
             <p>Професионален пчеларски магазин в Дупница. Оборудване и консумативи за всякакви пчеларски нужди.</p>
           </div>

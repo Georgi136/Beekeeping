@@ -7,8 +7,7 @@ export default function Header() {
     <header className="header">
       <div className="container header-container">
         <a href="/" className="logo">
-          <span className="logo-icon">🐝</span>
-          <span className="logo-text">САКИ</span>
+            <img src="/bee-logo.jpg" alt="САКИ Лого" style={{ height: '7%', width: '7%', objectFit: 'contain' }} />
         </a>
         
         <button 
