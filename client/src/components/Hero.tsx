@@ -33,7 +33,7 @@ export default function Hero() {
           position: relative;
           padding: 6rem 0;
           overflow: hidden;
-          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 1);
         }
 
         .hero-background {
@@ -54,7 +54,7 @@ export default function Hero() {
         .hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,243,199,0.9) 100%);
+          
         }
 
         .hero-pattern {

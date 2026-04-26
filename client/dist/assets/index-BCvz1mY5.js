@@ -160,12 +160,12 @@ Error generating stack: `+o.message+`
             visibility: visible;
           }
         }
-      `})]})}function Vf(){return c.jsxs("section",{className:"hero",children:[c.jsxs("div",{className:"hero-background",children:[c.jsx("img",{src:"https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",alt:"Слонечници с пчели",className:"hero-image"}),c.jsx("div",{className:"hero-overlay"}),c.jsx("div",{className:"hero-pattern"})]}),c.jsxs("div",{className:"container hero-content",children:[c.jsxs("div",{className:"hero-text",children:[c.jsxs("h1",{className:"hero-title",children:["Пчеларски Магазин ",c.jsx("span",{className:"highlight",children:"САКИ"})]}),c.jsx("p",{className:"hero-subtitle",children:"Професионално оборудване и консумативи за пчелари в Дупница"}),c.jsxs("div",{className:"hero-cta",children:[c.jsx("a",{href:"#products",className:"btn btn-primary",children:"Разгледайте продукти"}),c.jsx("a",{href:"#contact",className:"btn btn-secondary",children:"Свържете се с нас"})]})]}),c.jsx("div",{className:"hero-visual",children:c.jsx("div",{className:"bee-icon",children:"🐝"})})]}),c.jsx("style",{children:`
+      `})]})}function Vf(){return c.jsxs("section",{className:"hero",children:[c.jsxs("div",{className:"hero-background",children:[c.jsx("img",{src:"https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",alt:"Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница",className:"hero-image"}),c.jsx("div",{className:"hero-overlay"}),c.jsx("div",{className:"hero-pattern"})]}),c.jsxs("div",{className:"container hero-content",children:[c.jsxs("div",{className:"hero-text",children:[c.jsxs("h1",{className:"hero-title",children:["Пчеларски Магазин ",c.jsx("span",{className:"highlight",children:"САКИ"})]}),c.jsx("p",{className:"hero-subtitle",children:"Професионално оборудване и консумативи за пчелари в Дупница"}),c.jsxs("div",{className:"hero-cta",children:[c.jsx("a",{href:"#products",className:"btn btn-primary",children:"Разгледайте продукти"}),c.jsx("a",{href:"#contact",className:"btn btn-secondary",children:"Свържете се с нас"})]})]}),c.jsx("div",{className:"hero-visual",children:c.jsx("div",{className:"bee-icon",children:"🐝"})})]}),c.jsx("style",{children:`
         .hero {
           position: relative;
           padding: 6rem 0;
           overflow: hidden;
-          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 1);
         }
 
         .hero-background {
@@ -186,7 +186,7 @@ Error generating stack: `+o.message+`
         .hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,243,199,0.9) 100%);
+          
         }
 
         .hero-pattern {
