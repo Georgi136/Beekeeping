@@ -13,10 +13,10 @@ export default function Hero() {
       <div className="container hero-content">
         <div className="hero-text">
           <h1 className="hero-title">
-            Пчеларски Магазин <span className="highlight">САКИ</span>
+            Пчеларски магазин <span className="highlight">САКИ</span>
           </h1>
           <p className="hero-subtitle">
-            Професионално оборудване и консумативи за пчелари в Дупница
+            20+ години опит в пчеларството. Натурален пчелен мед от нашите Пчелини в Долистово и Коркина, сертифициран от БАБХ. Кошери, центрофуги и пчеларски инвентар.
           </p>
           <div className="hero-cta">
             <a href="#products" className="btn btn-primary">Разгледайте продукти</a>

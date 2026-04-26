@@ -23,8 +23,8 @@ const products: Product[] = [
   },
   {
     id: 3,
-    name: 'Медогонки',
-    description: 'Ръчни и електрически медогонки за ефективно извличане на мед',
+    name: 'Центрофуги',
+    description: 'Ръчни и електрически центрофуги за ефективно извличане на мед',
     icon: '🍯',
     image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
   },
@@ -44,10 +44,10 @@ const products: Product[] = [
   },
   {
     id: 6,
-    name: 'Лекарства и препарати',
-    description: 'Препарати за лечение и профилактика на пчелни заболявания',
-    icon: '💊',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    name: 'Прополисов мехлем',
+    description: 'Природен прополисов мехлем за локална грижа и регенерация',
+    icon: '🧴',
+    image: 'https://images.unsplash.com/photo-1516685018646-549d4b9fb70f?w=400&q=80'
   }
 ]
 

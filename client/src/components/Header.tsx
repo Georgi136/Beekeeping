@@ -19,7 +19,7 @@ export default function Header() {
         </button>
 
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
-          <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>За нас</a>
+          <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>За&nbsp;нас</a>
           <a href="#products" className="nav-link" onClick={() => setIsMenuOpen(false)}>Продукти</a>
           <a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>Контакти</a>
         </nav>
