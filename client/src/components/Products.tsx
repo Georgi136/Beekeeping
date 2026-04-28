@@ -1,3 +1,5 @@
+import { useLanguage } from '../i18n/LanguageContext'
+
 interface Product {
   id: number
   name: string
@@ -52,12 +54,14 @@ const products: Product[] = [
 ]
 
 export default function Products() {
+  const { t } = useLanguage()
+
   return (
     <section id="products" className="section products">
       <div className="container">
-        <h2 className="section-title">Нашите продукти</h2>
+        <h2 className="section-title">{t('productsTitle')}</h2>
         <p className="section-subtitle">
-          Разгледайте нашия богат асортимент от пчеларско оборудване и консумативи
+          {t('productsSubtitle')}
         </p>
 
         <div className="products-grid">
@@ -70,15 +74,15 @@ export default function Products() {
               <h3 className="product-name">{product.name}</h3>
               <p className="product-description">{product.description}</p>
               <a href="#contact" className="product-link">
-                Запитване →
+                {t('productInquiry')}
               </a>
             </div>
           ))}
         </div>
 
         <div className="products-cta">
-          <p>Не намерихте това, което търсите?</p>
-          <a href="#contact" className="btn btn-primary">Свържете се с нас</a>
+          <p>{t('productsCta')}</p>
+          <a href="#contact" className="btn btn-primary">{t('productsCtaButton')}</a>
         </div>
       </div>
 

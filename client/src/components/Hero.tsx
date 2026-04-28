@@ -1,10 +1,14 @@
+import { useLanguage } from '../i18n/LanguageContext'
+
 export default function Hero() {
+  const { t, language } = useLanguage()
+
   return (
     <section className="hero">
       <div className="hero-background">
         <img 
           src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
-          alt="Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница"
+          alt={language === 'bg' ? 'Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница' : 'SAKI Beekeeping Shop - Natural honey and beekeeping equipment - Dupnitsa'}
           className="hero-image"
         />
         <div className="hero-overlay"></div>
@@ -13,18 +17,18 @@ export default function Hero() {
       <div className="container hero-content">
         <div className="hero-text">
           <h1 className="hero-title">
-            Пчеларски магазин <span className="highlight">САКИ</span>
+            {t('heroTitle')}
           </h1>
           <p className="hero-subtitle">
-            20+ години опит в пчеларството. Натурален пчелен мед от нашите Пчелини в Долистово и Коркина, сертифициран от БАБХ. Кошери, центрофуги и пчеларски инвентар.
+            {t('heroSubtitle')}
           </p>
           <div className="hero-cta">
-            <a href="#products" className="btn btn-primary">Разгледайте продукти</a>
-            <a href="#contact" className="btn btn-secondary">Свържете се с нас</a>
+            <a href="#products" className="btn btn-primary">{t('heroCtaProducts')}</a>
+            <a href="#contact" className="btn btn-secondary">{t('heroCtaContact')}</a>
           </div>
         </div>
         <div className="hero-visual">
-          <img src="/big-bee.png" alt="Пчела" className="bee-icon" />
+          <img src="/big-bee.png" alt={language === 'bg' ? 'Пчела' : 'Bee'} className="bee-icon" />
         </div>
       </div>
 

@@ -1,14 +1,26 @@
 import { useState } from 'react'
+import LanguageSwitcher from './LanguageSwitcher'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <header className="header">
       <div className="container header-container">
         <a href="/" className="logo">
-            <img src="/bee-logo.jpg" alt="САКИ Лого" style={{ height: '7%', width: '7%', objectFit: 'contain' }} />
+            <img src="/bee-logo.jpg" alt="САКИ Лого" className="logo-img" />
         </a>
+        
+        <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
+          <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navAbout')}</a>
+          <a href="#products" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navProducts')}</a>
+          <a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navContact')}</a>
+          <div className="nav-lang-switcher">
+            <LanguageSwitcher />
+          </div>
+        </nav>
         
         <button 
           className="menu-toggle"
@@ -17,12 +29,6 @@ export default function Header() {
         >
           <span className={`hamburger ${isMenuOpen ? 'open' : ''}`}></span>
         </button>
-
-        <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
-          <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>За&nbsp;нас</a>
-          <a href="#products" className="nav-link" onClick={() => setIsMenuOpen(false)}>Продукти</a>
-          <a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>Контакти</a>
-        </nav>
       </div>
 
       <style>{`
@@ -44,9 +50,24 @@ export default function Header() {
         .logo {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
           text-decoration: none;
           color: var(--color-secondary);
+        }
+
+        .logo-img {
+          height: 50px;
+          width: auto;
+          max-width: 150px;
+          object-fit: contain;
+          transition: transform 0.2s ease;
+        }
+
+        .logo-img:hover {
+          transform: scale(1.05);
+        }
+
+        .header-right {
+          display: none;
         }
 
         .logo-icon {
@@ -60,6 +81,7 @@ export default function Header() {
 
         .nav {
           display: flex;
+          align-items: center;
           gap: 2rem;
         }
 
@@ -68,10 +90,18 @@ export default function Header() {
           color: var(--color-text);
           font-weight: 500;
           transition: color 0.3s ease;
+          display: inline-block;
+          whitespace: nowrap;
         }
 
         .nav-link:hover {
           color: var(--color-primary);
+        }
+
+        .nav-lang-switcher {
+          margin-left: 1rem;
+          padding-left: 1rem;
+          border-left: 1px solid var(--color-border, #e5e7eb);
         }
 
         .menu-toggle {
@@ -122,6 +152,11 @@ export default function Header() {
         }
 
         @media (max-width: 768px) {
+          .logo-img {
+            height: 40px;
+            max-width: 120px;
+          }
+
           .menu-toggle {
             display: block;
           }

@@ -1,47 +1,51 @@
+import { useLanguage } from '../i18n/LanguageContext'
+
 export default function About() {
+  const { t, language } = useLanguage()
+
   return (
     <section id="about" className="section about">
       <div className="container">
-        <h2 className="section-title">За нас</h2>
+        <h2 className="section-title">{t('aboutTitle')}</h2>
         <p className="section-subtitle">
-          Семейна фирма със 20+ години опит в пчеларството и производство на натурален пчелен мед
+          {t('aboutSubtitle')}
         </p>
 
         <div className="about-hero-image">
           <img 
             src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
-            alt="Семейна пчелна ферма САКИ в Долистово и Коркина - натурален пчелен мед" 
+            alt={language === 'bg' ? 'Семейна пчелна ферма САКИ в Долистово и Коркина - натурален пчелен мед' : 'SAKI family bee farm in Dolistovo and Korkina - natural honey'} 
           />
         </div>
 
         <div className="about-story">
           <div className="story-section">
-            <h3>Нашата история</h3>
+            <h3>{t('storyTitle')}</h3>
             <p>
-              САКИ е семейна фирма, основана с искрена любов към пчеларството и производството на чист, натурален пчелен мед. За повече от две десетилетия развихме дълбоко познание на пчелния свят и искусството на пчеларството. Нашата опит и дедикация се отразяват в всеки продукт, който предлагаме.
+              {t('storyText1')}
             </p>
             <p>
-              От скромни начала до днес, семейството ни остана верно на принципите на качество, прозрачност и устойчивост. Пчеларството за нас е повече от бизнес – това е призвание, предадено от поколение на поколение.
-            </p>
-          </div>
-
-          <div className="story-section">
-            <h3>Нашите Пчелини</h3>
-            <p>
-              Пчелините ни са разположени в селата <strong>Долистово и Коркина</strong>, където природата предоставя перфектни условия за развитие на здравите пчелни семейства. Тези региони са известни с разнообразието на цветя и чистотата на окръжаващата среда, което гарантира нашия <strong>натурален пчелен мед</strong> от най-висока категория.
-            </p>
-            <p>
-              Всяка пчелна колония се грижи с внимание и опит, осигурявайки оптимални условия за производство на чист мед без химикали и добавки.
+              {t('storyText2')}
             </p>
           </div>
 
           <div className="story-section">
-            <h3>Сертификация и качество</h3>
+            <h3>{t('apiariesTitle')}</h3>
             <p>
-              Нашия <strong>пчелен мед е сертифициран от БАБХ</strong> (Българска агенция по безопасност на храните), което гарантира качеството, чистотата и съответствието с всички международни стандарти. Сертификацията от БАБХ е доказателство за нашия ангажимент към здравето и доверието на нашите клиенти.
+              {language === 'bg' ? 'Пчелините ни са разположени в селата' : 'Our apiaries are located in the villages of'} <strong>{language === 'bg' ? 'Долистово и Коркина' : 'Dolistovo and Korkina'}</strong>, {language === 'bg' ? 'където природата предоставя перфектни условия за развитие на здравите пчелни семейства. Тези региони са известни с разнообразието на цветя и чистотата на окръжаващата среда, което гарантира нашия' : 'where nature provides perfect conditions for developing healthy bee colonies. These regions are known for their flower diversity and clean environment, which guarantees our'} <strong>{language === 'bg' ? 'натурален пчелен мед' : 'natural honey'}</strong> {language === 'bg' ? 'от най-висока категория.' : 'of the highest quality.'}
             </p>
             <p>
-              Предлагаме пчелни продукти, които можете да консумирате с пълна уверност в тяхната чистота и полезност.
+              {language === 'bg' ? 'Всяка пчелна колония се грижи с внимание и опит, осигурявайки оптимални условия за производство на чист мед без химикали и добавки.' : 'Each bee colony is cared for with attention and experience, ensuring optimal conditions for producing pure honey without chemicals or additives.'}
+            </p>
+          </div>
+
+          <div className="story-section">
+            <h3>{t('certificationTitle')}</h3>
+            <p>
+              {language === 'bg' ? 'Нашия' : 'Our'} <strong>{language === 'bg' ? 'пчелен мед е сертифициран от БАБХ' : 'honey is certified by BABH'}</strong> {language === 'bg' ? '(Българска агенция по безопасност на храните), което гарантира качеството, чистотата и съответствието с всички международни стандарти. Сертификацията от БАБХ е доказателство за нашия ангажимент към здравето и доверието на нашите клиенти.' : '(Bulgarian Food Safety Agency), which guarantees quality, purity, and compliance with all international standards. BABH certification is proof of our commitment to the health and trust of our customers.'}
+            </p>
+            <p>
+              {language === 'bg' ? 'Предлагаме пчелни продукти, които можете да консумирате с пълна уверност в тяхната чистота и полезност.' : 'We offer bee products that you can consume with complete confidence in their purity and benefits.'}
             </p>
           </div>
         </div>
@@ -49,51 +53,51 @@ export default function About() {
         <div className="about-grid">
           <div className="about-card">
             <div className="about-icon">🐝</div>
-            <h3>20+ години опит</h3>
-            <p>Две десетилетия на дедикация в пчеларството и производството на натурален пчелен мед, придобили дълбоко познание и мастерство.</p>
+            <h3>{t('cardExperience')}</h3>
+            <p>{t('cardExperienceText')}</p>
           </div>
           
           <div className="about-card">
             <div className="about-icon">🏡</div>
-            <h3>Собствени Пчелини</h3>
-            <p>Нашите Пчелини са разположени в селата <strong>Долистово и Коркина</strong>, където произвеждаме чист пчелен мед в идеални условия.</p>
+            <h3>{t('cardApiaries')}</h3>
+            <p>{t('cardApiariesText')}</p>
           </div>
           
           <div className="about-card">
             <div className="about-icon">✅</div>
-            <h3>Сертификация БАБХ</h3>
-            <p>Нашия пчелен мед е сертифициран от БАБХ, гарантирайки най-високите стандарти на качество и безопасност.</p>
+            <h3>{t('cardCertification')}</h3>
+            <p>{t('cardCertificationText')}</p>
           </div>
           
           <div className="about-card">
             <div className="about-icon">🏪</div>
-            <h3>Магазин в Дупница</h3>
-            <p>Посетете нашия магазин на Кооперативния пазар, Павилион номер 5, в гр. Дупница за преки продажби и консултации.</p>
+            <h3>{t('cardShop')}</h3>
+            <p>{t('cardShopText')}</p>
           </div>
 
           <div className="about-card">
             <div className="about-icon">📦</div>
-            <h3>Пълен асортимент</h3>
-            <p>Предлагаме натурален пчелен мед, кошери, пчеларски инвентар, центрофуги и прополисов мехлем за всички пчелари.</p>
+            <h3>{t('cardProducts')}</h3>
+            <p>{t('cardProductsText')}</p>
           </div>
           
           <div className="about-card">
             <div className="about-icon">🚚</div>
-            <h3>Бърза доставка</h3>
-            <p>Осигуряваме надеждна доставка на всички продукти по цялата страна с грижа и професионализъм.</p>
+            <h3>{t('cardDelivery')}</h3>
+            <p>{t('cardDeliveryText')}</p>
           </div>
         </div>
 
         <div className="about-info">
           <div className="about-info-content">
-            <h3>Защо да вярвате на САКИ?</h3>
+            <h3>{t('whyChooseTitle')}</h3>
             <ul className="about-list">
-              <li>20+ години опит в пчеларството и производство на чист пчелен мед</li>
-              <li>Собствена пчелна ферма в Долистово и Коркина с натурален пчелен мед</li>
-              <li>Сертификация от БАБХ за качество и безопасност</li>
-              <li>Семейна фирма, позната с прозрачност и честност</li>
-              <li>Пълен асортимент от пчеларски материали и продукти</li>
-              <li>Експертни консултации и поддръжка на пчеларите</li>
+              <li>{t('whyChoose1')}</li>
+              <li>{t('whyChoose2')}</li>
+              <li>{t('whyChoose3')}</li>
+              <li>{t('whyChoose4')}</li>
+              <li>{t('whyChoose5')}</li>
+              <li>{t('whyChoose6')}</li>
             </ul>
           </div>
         </div>

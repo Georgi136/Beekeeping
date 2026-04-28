@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 interface FormData {
   name: string
@@ -13,6 +14,7 @@ interface FormStatus {
 }
 
 export default function Contact() {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -39,13 +41,13 @@ export default function Contact() {
       const data = await response.json()
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Съобщението е изпратено успешно! Ще се свържем с вас скоро.' })
+        setStatus({ type: 'success', message: t('formSuccess') })
         setFormData({ name: '', email: '', phone: '', message: '' })
       } else {
-        setStatus({ type: 'error', message: data.message || 'Възникна грешка. Моля, опитайте отново.' })
+        setStatus({ type: 'error', message: data.message || t('formError') })
       }
     } catch {
-      setStatus({ type: 'error', message: 'Възникна грешка при изпращането. Моля, опитайте отново.' })
+      setStatus({ type: 'error', message: t('formError') })
     } finally {
       setIsSubmitting(false)
     }
@@ -59,9 +61,9 @@ export default function Contact() {
   return (
     <section id="contact" className="section contact">
       <div className="container">
-        <h2 className="section-title">Свържете се с нас</h2>
+        <h2 className="section-title">{t('contactTitle')}</h2>
         <p className="section-subtitle">
-          Имате въпроси? Свържете се с нас и ние ще ви отговорим възможно най-бързо
+          {t('contactSubtitle')}
         </p>
 
         <div className="contact-grid">
@@ -69,56 +71,56 @@ export default function Contact() {
             <div className="contact-item">
               <div className="contact-icon">📍</div>
               <div>
-                <h3>Адрес</h3>
-                <p>павилион 5, ж.к. Дупница, 2600 Дупница</p>
+                <h3>{t('address')}</h3>
+                <p>{t('addressValue')}</p>
               </div>
             </div>
 
             <div className="contact-item">
               <div className="contact-icon">📞</div>
               <div>
-                <h3>Телефон</h3>
-                <p>089 551 7056</p>
+                <h3>{t('phone')}</h3>
+                <p>{t('phoneValue')}</p>
               </div>
             </div>
 
             <div className="contact-item">
               <div className="contact-icon">✉️</div>
               <div>
-                <h3>Имейл</h3>
-                <p>Info@sakimed.com</p>
+                <h3>{t('email')}</h3>
+                <p>{t('emailValue')}</p>
               </div>
             </div>
 
             <div className="contact-item">
               <div className="contact-icon">🌐</div>
               <div>
-                <h3>Уебсайт</h3>
-                <p>www.sakimed.com</p>
+                <h3>{t('website')}</h3>
+                <p>{t('websiteValue')}</p>
               </div>
             </div>
 
             <div className="contact-item">
               <div className="contact-icon">📘</div>
               <div>
-                <h3>Facebook</h3>
-                <p><a href="https://facebook.com/Saki2008" target="_blank" rel="noopener noreferrer">facebook.com/Saki2008</a></p>
+                <h3>{t('facebook')}</h3>
+                <p><a href="https://facebook.com/Saki2008" target="_blank" rel="noopener noreferrer">{t('facebookValue')}</a></p>
               </div>
             </div>
 
             <div className="contact-item">
               <div className="contact-icon">🕐</div>
               <div>
-                <h3>Работно време</h3>
-                <p>Понеделник - Петък: 09:00 - 18:00</p>
-                <p>Събота: 09:00 - 14:00</p>
+                <h3>{t('workingHours')}</h3>
+                <p>{t('workingHoursWeekday')}</p>
+                <p>{t('workingHoursSaturday')}</p>
               </div>
             </div>
           </div>
 
           <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="name">Име *</label>
+              <label htmlFor="name">{t('formName')}</label>
               <input
                 type="text"
                 id="name"
@@ -126,12 +128,12 @@ export default function Contact() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="Вашето име"
+                placeholder={t('formNamePlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Имейл *</label>
+              <label htmlFor="email">{t('formEmail')}</label>
               <input
                 type="email"
                 id="email"
@@ -139,37 +141,37 @@ export default function Contact() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="your@email.com"
+                placeholder={t('formEmailPlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone">Телефон</label>
+              <label htmlFor="phone">{t('formPhone')}</label>
               <input
                 type="tel"
                 id="phone"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+359 88 123 4567"
+                placeholder={t('formPhonePlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="message">Съобщение *</label>
+              <label htmlFor="message">{t('formMessage')}</label>
               <textarea
                 id="message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
                 required
-                placeholder="Вашето съобщение..."
+                placeholder={t('formMessagePlaceholder')}
                 rows={5}
               />
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Изпраща се...' : 'Изпрати съобщение'}
+              {isSubmitting ? t('formSubmitting') : t('formSubmit')}
             </button>
 
             {status.type && (

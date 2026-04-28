@@ -1,4 +1,8 @@
+import { useLanguage } from '../i18n/LanguageContext'
+
 export default function Footer() {
+  const { t, language } = useLanguage()
+
   return (
     <footer className="footer">
       <div className="container">
@@ -7,22 +11,22 @@ export default function Footer() {
             <div className="footer-logo">
                   <img src="/bee-logo.jpg" alt="САКИ Лого" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
             </div>
-            <p>Професионален пчеларски магазин в Дупница. Оборудване и консумативи за всякакви пчеларски нужди.</p>
+            <p>{language === 'bg' ? 'Професионален пчеларски магазин в Дупница. Оборудване и консумативи за всякакви пчеларски нужди.' : 'Professional beekeeping shop in Dupnitsa. Equipment and supplies for all beekeeping needs.'}</p>
           </div>
 
           <div className="footer-links">
-            <h4>Бързи връзки</h4>
+            <h4>{language === 'bg' ? 'Бързи връзки' : 'Quick Links'}</h4>
             <ul>
-              <li><a href="#about">За нас</a></li>
-              <li><a href="#products">Продукти</a></li>
-              <li><a href="#contact">Контакти</a></li>
+              <li><a href="#about">{t('navAbout')}</a></li>
+              <li><a href="#products">{t('navProducts')}</a></li>
+              <li><a href="#contact">{t('navContact')}</a></li>
             </ul>
           </div>
 
           <div className="footer-contact">
-            <h4>Контакти</h4>
+            <h4>{language === 'bg' ? 'Контакти' : 'Contact'}</h4>
             <ul>
-              <li>📍 Ж.к. Дупница, Кооперативен пазар</li>
+              <li>📍 {language === 'bg' ? 'Ж.к. Дупница, Кооперативен пазар' : 'Dupnitsa, Cooperative Market'}</li>
               <li>📞 089 551 7056</li>
               <li>✉️ Info@sakimed.com</li>
               <li>🌐 www.sakimed.com</li>
@@ -32,7 +36,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Пчеларски Магазин САКИ - Дупница. Всички права запазени.</p>
+          <p>© {new Date().getFullYear()} SAKI - {language === 'bg' ? 'Дупница' : 'Dupnitsa'}. {t('footerRights')}</p>
         </div>
       </div>
 
