@@ -1,4 +1,5 @@
 import { useLanguage } from '../i18n/LanguageContext'
+import UKFlag from './UKFlag'
 
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage()
@@ -11,10 +12,8 @@ export default function LanguageSwitcher() {
         aria-label="English"
         title="English"
       >
-        <div className="flag-uk">
-          <div className="uk-cross"></div>
-        </div>
-
+      
+        <UKFlag/>
         
       </button>
       <button
@@ -59,66 +58,6 @@ export default function LanguageSwitcher() {
         .lang-btn.active {
           border-color: var(--color-primary, #f59e0b);
           box-shadow: 0 0 0 2px var(--color-primary, #f59e0b);
-        }
-
-        /* UK Flag (Union Jack) */
-        .flag-uk {
-          width: 100%;
-          height: 100%;
-          position: relative;
-          background: #012169;
-          overflow: hidden;
-        }
-
-        .uk-cross {
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 6px;
-          transform: translateY(-50%);
-          background: linear-gradient(90deg, 
-            #c8102e 0%, #c8102e 28%, 
-            transparent 28%, transparent 72%, 
-            #c8102e 72%, #c8102e 100%
-          );
-        }
-
-        .uk-cross::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 100%;
-          background: linear-gradient(180deg, 
-            #c8102e 0%, #c8102e 28%, 
-            transparent 28%, transparent 72%, 
-            #c8102e 72%, #c8102e 100%
-          );
-        }
-
-        .uk-cross::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 2px;
-          transform: translateY(-50%);
-          background: #fff;
-        }
-
-        .uk-cross::before::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 2px;
-          height: 100%;
-          background: #fff;
         }
 
         /* Bulgarian Flag */
