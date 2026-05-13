@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function Hero() {
@@ -23,8 +24,8 @@ export default function Hero() {
             {t('heroSubtitle')}
           </p>
           <div className="hero-cta">
-            <a href="#products" className="btn btn-primary">{t('heroCtaProducts')}</a>
-            <a href="#contact" className="btn btn-secondary">{t('heroCtaContact')}</a>
+            <Link to="/products?category=honey" className="btn btn-primary">Пчелните ни продукти</Link>
+            <Link to="/products?category=equipment" className="btn btn-secondary">Всичко за пчеларя</Link>
           </div>
         </div>
         <div className="hero-visual">
@@ -101,6 +102,10 @@ export default function Hero() {
           display: flex;
           gap: 1rem;
           flex-wrap: wrap;
+        }
+
+        .btn {
+          text-decoration: none;
         }
 
         .hero-visual {

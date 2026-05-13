@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../i18n/LanguageContext'
 
 interface Product {
@@ -8,48 +9,50 @@ interface Product {
   image: string
 }
 
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 420 280%22%3E%3Crect width=%22420%22 height=%22280%22 fill=%22%23f8fafc%22/%3E%3Ctext x=%22210%22 y=%22140%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%2220%22 fill=%22%2390a4ae%22%3EПродукт%3C/text%3E%3C/svg%3E'
+
 const products: Product[] = [
   {
     id: 1,
     name: 'Кошери и рамки',
-    description: 'Различни типове кошери - Дадан, Лангстрот, Универсални рамки и восъчни листове',
+    description: 'Различни типове кошери - Дадан, Лангстрот, Uniwersalni рамки и восъчни листове',
     icon: '🏠',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   },
   {
     id: 2,
     name: 'Защитно облекло',
     description: 'Пчеларски костюми, ръкавици, мрежи и други средства за защита',
     icon: '👕',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   },
   {
     id: 3,
     name: 'Центрофуги',
     description: 'Ръчни и електрически центрофуги за ефективно извличане на мед',
     icon: '🍯',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   },
   {
     id: 4,
     name: 'Инвентар и инструменти',
     description: 'Пчеларски ножове, вилици, димници и друг специализиран инвентар',
     icon: '🔧',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   },
   {
     id: 5,
     name: 'Подхранващи сиропи',
     description: 'Качествени подхранващи сиропи и добавки за пчелите',
     icon: '🫗',
-    image: 'https://images.unsplash.com/photo-1470509037663-253ce784d5be?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   },
   {
     id: 6,
     name: 'Прополисов мехлем',
     description: 'Природен прополисов мехлем за локална грижа и регенерация',
     icon: '🧴',
-    image: 'https://images.unsplash.com/photo-1516685018646-549d4b9fb70f?w=400&q=80'
+    image: PLACEHOLDER_IMAGE
   }
 ]
 
@@ -82,7 +85,7 @@ export default function Products() {
 
         <div className="products-cta">
           <p>{t('productsCta')}</p>
-          <a href="#contact" className="btn btn-primary">{t('productsCtaButton')}</a>
+          <Link to="/products" className="btn btn-primary">{t('productsCtaButton')}</Link>
         </div>
       </div>
 

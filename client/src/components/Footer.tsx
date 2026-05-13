@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function Footer() {
@@ -20,6 +21,7 @@ export default function Footer() {
               <li><a href="#about">{t('navAbout')}</a></li>
               <li><a href="#products">{t('navProducts')}</a></li>
               <li><a href="#contact">{t('navContact')}</a></li>
+              <li><Link to="/admin" style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.8rem' }}>Админ</Link></li>
             </ul>
           </div>
 

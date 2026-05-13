@@ -1,22 +1,74 @@
 import { useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useLanguage } from '../i18n/LanguageContext'
+import { useCart } from '../context/CartContext'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { t } = useLanguage()
+  const { getTotalItems } = useCart()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleNavigation = (sectionId: string) => {
+    setIsMenuOpen(false)
+    
+    if (location.pathname === '/') {
+      // If on home page, scroll to section
+      const element = document.getElementById(sectionId)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+      }
+    } else {
+      // If not on home page, navigate to home and scroll
+      navigate('/')
+      setTimeout(() => {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    }
+  }
 
   return (
     <header className="header">
       <div className="container header-container">
-        <a href="/" className="logo">
+        <Link 
+          to="/#Hero" 
+          className="logo" 
+          onClick={(e) => {
+            setIsMenuOpen(false)
+            if (location.pathname === '/') {
+              e.preventDefault()
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+          }}
+        >
             <img src="/bee-logo.jpg" alt="САКИ Лого" className="logo-img" />
-        </a>
+        </Link>
         
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
-          <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navAbout')}</a>
-          <a href="#products" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navProducts')}</a>
-          <a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navContact')}</a>
+          <button 
+            className="nav-link" 
+            onClick={() => handleNavigation('about')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            {t('navAbout')}
+          </button>
+          <Link to="/products" className="nav-link" onClick={() => setIsMenuOpen(false)}>{t('navProducts')}</Link>
+          <button 
+            className="nav-link" 
+            onClick={() => handleNavigation('contact')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            {t('navContact')}
+          </button>
+          <Link to="/cart" className="nav-link cart-link" onClick={() => setIsMenuOpen(false)}>
+            🛒 Количка
+            {getTotalItems() > 0 && <span className="cart-badge">{getTotalItems()}</span>}
+          </Link>
           <div className="nav-lang-switcher">
             <LanguageSwitcher />
           </div>
@@ -92,10 +144,32 @@ export default function Header() {
           transition: color 0.3s ease;
           display: inline-block;
           whitespace: nowrap;
+          position: relative;
         }
 
         .nav-link:hover {
           color: var(--color-primary);
+        }
+
+        .cart-link {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: var(--color-primary);
+        }
+
+        .cart-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-primary);
+          color: white;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          font-size: 0.75rem;
+          font-weight: 700;
+          margin-left: 0.25rem;
         }
 
         .nav-lang-switcher {
