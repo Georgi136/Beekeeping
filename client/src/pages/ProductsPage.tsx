@@ -1,66 +1,117 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
-import { API_BASE_URL, resolveProductImage } from '../config'
+import SEO from '../components/SEO'
+import { apiUrl, resolveProductImage } from '../config'
 
 interface Product {
   id: number
+  slug: string
   name: string
-  category: 'honey' | 'equipment'
+  category: string
+  categoryName: string
   price: number
+  salePrice?: number | null
   image: string
   description: string
   stock: number
+}
+
+interface Category {
+  id: number
+  name: string
+  slug: string
+}
+
+interface Promotion {
+  id: number
+  title: string
+  bannerText?: string | null
+  active: boolean
 }
 
 export default function ProductsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'honey' | 'equipment'>('all')
+  const [selectedCategory, setSelectedCategory] = useState('all')
 
   // Set initial category from query parameter
   useEffect(() => {
     const category = searchParams.get('category')
-    if (category === 'honey' || category === 'equipment') {
-      setSelectedCategory(category)
-    }
+    if (category === 'honey') setSelectedCategory('pchelni-produkti')
+    else if (category === 'equipment') setSelectedCategory('pchelarstvo')
+    else if (category) setSelectedCategory(category)
   }, [searchParams])
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/products`)
-        if (!response.ok) throw new Error('Failed to fetch products')
-        const data = await response.json()
+        const [productsResponse, categoriesResponse, promotionsResponse] = await Promise.all([
+          fetch(apiUrl('/api/products')),
+          fetch(apiUrl('/api/categories')),
+          fetch(apiUrl('/api/promotions'))
+        ])
+        if (!productsResponse.ok || !categoriesResponse.ok) throw new Error('Не успяхме да заредим продуктите.')
+        const data = await productsResponse.json()
+        const categoryData = await categoriesResponse.json()
+        const promotionData = promotionsResponse.ok ? await promotionsResponse.json() : []
         const mappedData = data.map((p: Product) => ({
           ...p,
           image: resolveProductImage(p.image)
         }))
         setProducts(mappedData)
+        setCategories(categoryData)
+        setPromotions(promotionData)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        setError(err instanceof Error ? err.message : 'Възникна грешка при зареждането.')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProducts()
+    fetchData()
   }, [])
 
   const filteredProducts = selectedCategory === 'all' 
     ? products 
     : products.filter(p => p.category === selectedCategory)
 
+  const pageTitle = selectedCategory === 'pchelni-produkti'
+    ? 'Пчелни продукти от САКИ | Натурален мед и прополис'
+    : selectedCategory === 'pchelarstvo'
+      ? 'Пчеларски инвентар и оборудване | САКИ Дупница'
+      : 'Продукти | Мед и пчеларски инвентар от САКИ'
+
+  const selectedCategoryName = categories.find((category) => category.slug === selectedCategory)?.name
+  const activePromotion = promotions.find((promotion) => promotion.active && promotion.bannerText)
+
+  const pageDescription = selectedCategory === 'pchelni-produkti'
+    ? 'Разгледайте пчелните продукти на САКИ - натурален мед от собствени пчелини и прополис с гарантирано качество.'
+    : selectedCategory === 'pchelarstvo'
+      ? 'Кошери, рамки, центрофуги, защитно облекло и практичен пчеларски инвентар за начинаещи и опитни пчелари.'
+      : 'Мед, пчелни продукти, кошери, центрофуги и пчеларски инвентар от семеен магазин САКИ в Дупница.'
+
   return (
-    <div className="products-page">
+    <>
+      <SEO title={pageTitle} description={pageDescription} path="/products" />
+      <div className="products-page">
       <div className="container">
         <div className="products-header">
-          <h1>Наши продукти</h1>
-          <p>Най-качествено оборудване и мед от нашата пасека</p>
+          <h1>{selectedCategoryName || 'Нашите продукти'}</h1>
+          <p>Натурален мед, пчелни продукти и оборудване за работа в пчелина</p>
         </div>
+
+        {activePromotion && (
+          <div className="promotion-banner">
+            <strong>{activePromotion.title}</strong>
+            <span>{activePromotion.bannerText}</span>
+          </div>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
@@ -75,32 +126,31 @@ export default function ProductsPage() {
               >
                 Всички продукти
               </button>
-              <button
-                className={`filter-btn ${selectedCategory === 'honey' ? 'active' : ''}`}
-                onClick={() => setSelectedCategory('honey')}
-              >
-                🍯 Пчелни продукти
-              </button>
-              <button
-                className={`filter-btn ${selectedCategory === 'equipment' ? 'active' : ''}`}
-                onClick={() => setSelectedCategory('equipment')}
-              >
-                🔧 За пчелари
-              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`filter-btn ${selectedCategory === category.slug ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category.slug)}
+                >
+                  {category.name}
+                </button>
+              ))}
             </div>
 
             {filteredProducts.length === 0 ? (
-              <div className="no-products">Няма намерени продукти в тази категория</div>
+              <div className="no-products">В тази категория все още няма продукти.</div>
             ) : (
               <div className="products-grid">
                 {filteredProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     id={product.id}
+                    slug={product.slug}
                     name={product.name}
                     price={product.price}
+                    salePrice={product.salePrice}
                     image={product.image}
-                    onViewDetails={(id) => navigate(`/products/${id}`)}
+                    onViewDetails={(idOrSlug) => navigate(`/products/${idOrSlug}`)}
                   />
                 ))}
               </div>
@@ -141,6 +191,21 @@ export default function ProductsPage() {
           border-radius: 0.375rem;
           margin-bottom: 2rem;
           border-left: 4px solid #c33;
+        }
+
+        .promotion-banner {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          justify-content: center;
+          align-items: center;
+          background: #fff7ed;
+          color: #7c2d12;
+          border: 1px solid #fed7aa;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          margin-bottom: 2rem;
+          text-align: center;
         }
 
         .loading {
@@ -204,6 +269,7 @@ export default function ProductsPage() {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </>
   )
 }

@@ -86,3 +86,39 @@ npm start
 ## 📄 Лиценз
 
 MIT License
+
+## Vercel Deployment
+
+This repo now includes `vercel.json` for a root-level Vercel deploy:
+
+- Install Command: `npm install && cd client && npm install && cd ../server && npm install`
+- Build Command: `npm run build`
+- Output Directory: `client/dist`
+- API routes: `/api/*`
+- Uploaded files route: `/uploads/*`
+- SPA fallback: all other routes go to `client/dist/index.html`
+
+For the normal same-project Vercel deploy, leave `VITE_API_URL` unset so the client uses same-origin `/api` requests. Set `VITE_API_URL` only if you deploy the API somewhere else.
+
+## Production Setup
+
+The store now uses PostgreSQL with Prisma instead of in-memory data. Create a production database and set these environment variables in Vercel or your backend host:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `CLIENT_ORIGIN`
+- `BLOB_READ_WRITE_TOKEN`
+
+Then run:
+
+```bash
+cd server
+npm run db:deploy
+npm run db:seed
+```
+
+Media uploads use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set. Without it, uploads fall back to the local `uploads` folder for development only.
+
+For production, use Node.js 20+.

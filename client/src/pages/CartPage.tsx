@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import CartItem from '../components/CartItem'
+import SEO from '../components/SEO'
 
 export default function CartPage() {
   const navigate = useNavigate()
@@ -9,6 +10,7 @@ export default function CartPage() {
   if (cart.length === 0) {
     return (
       <div className="cart-page">
+        <SEO title="Количка | САКИ" description="Вашата количка в онлайн магазина на САКИ." path="/cart" noindex />
         <div className="container">
           <h1>Вашата количка</h1>
           <div className="empty-cart">
@@ -45,6 +47,7 @@ export default function CartPage() {
 
   return (
     <div className="cart-page">
+      <SEO title="Количка | САКИ" description="Прегледайте продуктите в количката си преди поръчка." path="/cart" noindex />
       <div className="container">
         <h1>Вашата количка</h1>
 
@@ -69,8 +72,8 @@ export default function CartPage() {
               <h3>Резюме на поръчката</h3>
 
               <div className="summary-row">
-                <span>Междинен общо:</span>
-                <span>{getTotalPrice().toFixed(2)} лв</span>
+                <span>Междинна сума:</span>
+                <span>{getTotalPrice().toFixed(2)} лв.</span>
               </div>
 
               <div className="summary-row">
@@ -82,14 +85,14 @@ export default function CartPage() {
 
               <div className="summary-row total">
                 <span>Общо:</span>
-                <span>{getTotalPrice().toFixed(2)} лв</span>
+                <span>{getTotalPrice().toFixed(2)} лв.</span>
               </div>
 
               <button 
                 className="btn btn-primary btn-block"
                 onClick={() => navigate('/checkout')}
               >
-                Към плащане
+                Към поръчката
               </button>
 
               <button 

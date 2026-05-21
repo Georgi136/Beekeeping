@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 export interface CartItem {
   productId: number
+  slug?: string
   name: string
   price: number
   quantity: number
@@ -10,7 +11,7 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[]
-  addToCart: (product: { id: number; name: string; price: number; image: string }, quantity: number) => void
+  addToCart: (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string }, quantity: number) => void
   removeFromCart: (productId: number) => void
   updateQuantity: (productId: number, quantity: number) => void
   clearCart: () => void
@@ -42,7 +43,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
   }, [cart])
 
-  const addToCart = (product: { id: number; name: string; price: number; image: string }, quantity: number) => {
+  const addToCart = (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string }, quantity: number) => {
+    const price = product.salePrice ?? product.price
+
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.productId === product.id)
       
@@ -58,8 +61,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ...prevCart,
         {
           productId: product.id,
+          slug: product.slug,
           name: product.name,
-          price: product.price,
+          price,
           quantity,
           image: product.image
         }

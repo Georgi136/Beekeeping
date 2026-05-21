@@ -1,20 +1,23 @@
 import { useState } from 'react'
 import { useCart } from '../context/CartContext'
+import { apiUrl } from '../config'
 
 interface CheckoutFormProps {
   onOrderSuccess?: (orderId: string) => void
 }
 
 export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
-  const { cart, getTotalPrice, clearCart } = useCart()
+  const { cart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   
   const [formData, setFormData] = useState({
     customerName: '',
+    email: '',
     phone: '',
-    address: ''
+    address: '',
+    notes: ''
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -31,21 +34,21 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3001/api/orders', {
+      const response = await fetch(apiUrl('/api/orders'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           customerName: formData.customerName,
+          email: formData.email,
           phone: formData.phone,
           address: formData.address,
+          notes: formData.notes,
           items: cart.map(item => ({
             productId: item.productId,
-            quantity: item.quantity,
-            price: item.price
-          })),
-          totalPrice: getTotalPrice()
+            quantity: item.quantity
+          }))
         })
       })
 
@@ -63,9 +66,9 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
       }
 
       // Reset form
-      setFormData({ customerName: '', phone: '', address: '' })
+      setFormData({ customerName: '', email: '', phone: '', address: '', notes: '' })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Възникна грешка. Моля, опитайте отново.')
     } finally {
       setLoading(false)
     }
@@ -76,15 +79,15 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
       <div className="checkout-success">
         <div className="success-icon">✓</div>
         <h2>Поръчката е приета!</h2>
-        <p>Благодарим вам за поръчката. Скоро ще се свържем с вас.</p>
-        <p className="success-note">Проверете вашия имейл за информация за доставка.</p>
+        <p>Благодарим ви за поръчката. Ще се свържем с вас за потвърждение.</p>
+        <p className="success-note">Ако имате въпрос, можете да ни потърсите и по телефона.</p>
       </div>
     )
   }
 
   return (
     <form onSubmit={handleSubmit} className="checkout-form">
-      <h2>Данни за доставка</h2>
+      <h2>Данни за поръчката</h2>
 
       {error && <div className="form-error">{error}</div>}
 
@@ -115,6 +118,18 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
       </div>
 
       <div className="form-group">
+        <label htmlFor="email">Имейл</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="you@example.com"
+        />
+      </div>
+
+      <div className="form-group">
         <label htmlFor="address">Адрес за доставка *</label>
         <textarea
           id="address"
@@ -122,7 +137,19 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
           value={formData.address}
           onChange={handleChange}
           required
-          placeholder="ул. Пример 123, град Дупница"
+          placeholder="ул. Пример 123, гр. Дупница"
+          rows={3}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="notes">Бележка към поръчката</label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          placeholder="Уточнения за доставка или продуктите"
           rows={3}
         />
       </div>
@@ -132,7 +159,7 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
         className="btn btn-primary btn-lg"
         disabled={loading || cart.length === 0}
       >
-        {loading ? 'Обработка...' : 'Поръчай сега'}
+        {loading ? 'Изпращане...' : 'Изпрати поръчката'}
       </button>
 
       <style>{`

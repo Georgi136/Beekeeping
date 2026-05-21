@@ -14,7 +14,7 @@ export default function CartItem({ item }: CartItemProps) {
       </div>
       <div className="cart-item-details">
         <h3 className="cart-item-name">{item.name}</h3>
-        <p className="cart-item-price">{item.price} лв</p>
+        <p className="cart-item-price">{item.price} лв.</p>
       </div>
       <div className="cart-item-quantity">
         <button 
@@ -38,7 +38,7 @@ export default function CartItem({ item }: CartItemProps) {
         </button>
       </div>
       <div className="cart-item-subtotal">
-        {(item.price * item.quantity).toFixed(2)} лв
+        {(item.price * item.quantity).toFixed(2)} лв.
       </div>
       <button 
         className="cart-item-remove"

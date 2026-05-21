@@ -14,8 +14,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('language') as Language
       if (saved) return saved
-      const browserLang = navigator.language.split('-')[0]
-      return browserLang === 'bg' ? 'bg' : 'en'
     }
     return 'bg'
   })

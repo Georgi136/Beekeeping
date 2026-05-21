@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { API_BASE_URL, resolveProductImage } from '../config'
+import SEO from '../components/SEO'
+import { apiUrl, resolveProductImage } from '../config'
+import { absoluteUrl, SITE_NAME } from '../seo'
 
 interface Product {
   id: number
+  slug: string
   name: string
-  category: 'honey' | 'equipment'
+  category: string
+  categoryName: string
   price: number
+  salePrice?: number | null
   image: string
   description: string
   stock: number
@@ -27,13 +32,13 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/products/${id}`)
-        if (!response.ok) throw new Error('Product not found')
+        const response = await fetch(apiUrl(`/api/products/${id}`))
+        if (!response.ok) throw new Error('Продуктът не е намерен.')
         const data = await response.json()
         data.image = resolveProductImage(data.image)
         setProduct(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        setError(err instanceof Error ? err.message : 'Възникна грешка при зареждането.')
       } finally {
         setLoading(false)
       }
@@ -52,32 +57,67 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="product-detail-page">
-        <div className="container">
-          <div className="loading">Зареждане...</div>
+      <>
+        <SEO title="Продукт | САКИ" description="Продукт от пчеларски магазин САКИ в Дупница." path={`/products/${id ?? ''}`} />
+        <div className="product-detail-page">
+          <div className="container">
+            <div className="loading">Зареждане...</div>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (error || !product) {
     return (
-      <div className="product-detail-page">
-        <div className="container">
-          <div className="error-message">{error || 'Product not found'}</div>
-          <button className="btn btn-primary" onClick={() => navigate('/products')}>
-            Назад към продукти
-          </button>
+      <>
+        <SEO title="Продуктът не е намерен | САКИ" description="Този продукт не е наличен в каталога на САКИ." path={`/products/${id ?? ''}`} noindex />
+        <div className="product-detail-page">
+          <div className="container">
+            <div className="error-message">{error || 'Продуктът не е намерен.'}</div>
+            <button className="btn btn-primary" onClick={() => navigate('/products')}>
+              Назад към продуктите
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
-  const categoryLabel = product.category === 'honey' ? '🍯 Пчелни продукти' : '🔧 За пчелари'
+  const categoryLabel = product.categoryName || (product.category === 'pchelni-produkti' ? 'Пчелни продукти' : 'За пчелари')
   const inStock = product.stock > 0
+  const productTitle = `${product.name} | ${SITE_NAME}`
+  const currentPrice = product.salePrice ?? product.price
+  const productDescription = `${product.description} Цена: ${currentPrice} лв. ${inStock ? 'В наличност.' : 'Временно изчерпан.'}`
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    image: absoluteUrl(product.image),
+    brand: {
+      '@type': 'Brand',
+      name: 'САКИ'
+    },
+    offers: {
+      '@type': 'Offer',
+      url: absoluteUrl(`/products/${product.slug}`),
+      priceCurrency: 'BGN',
+      price: currentPrice,
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+    }
+  }
 
   return (
     <div className="product-detail-page">
+      <SEO
+        title={productTitle}
+        description={productDescription}
+        path={`/products/${product.slug}`}
+        image={product.image}
+        type="product"
+        jsonLd={productJsonLd}
+      />
       <div className="container">
         <button className="back-btn" onClick={() => navigate('/products')}>
           ← Назад
@@ -96,8 +136,9 @@ export default function ProductDetailPage() {
             <h1 className="product-detail-name">{product.name}</h1>
 
             <div className="product-detail-price">
-              <span className="price-amount">{product.price}</span>
-              <span className="price-currency">лв</span>
+              {product.salePrice && <span className="old-price">{product.price} лв.</span>}
+              <span className="price-amount">{currentPrice}</span>
+              <span className="price-currency">лв.</span>
             </div>
 
             <div className="product-detail-description">
@@ -107,7 +148,7 @@ export default function ProductDetailPage() {
 
             {!inStock && (
               <div className="stock-warning">
-                Няма наличност - скоро ще е достъпно
+                В момента няма наличност.
               </div>
             )}
 
@@ -148,7 +189,7 @@ export default function ProductDetailPage() {
               </button>
 
               {addedToCart && (
-                <div className="added-message">✓ Добавено успешно!</div>
+                <div className="added-message">✓ Добавено в количката.</div>
               )}
             </div>
 
@@ -156,7 +197,7 @@ export default function ProductDetailPage() {
               <div className="info-item">
                 <span className="info-label">Наличност:</span>
                 <span className="info-value">
-                  {inStock ? `${product.stock} бр.` : 'Временно нямаме'}
+                  {inStock ? `${product.stock} бр.` : 'Временно изчерпан'}
                 </span>
               </div>
               <div className="info-item">
@@ -246,6 +287,17 @@ export default function ProductDetailPage() {
           color: var(--color-primary);
           font-weight: 700;
           margin-bottom: 2rem;
+          display: flex;
+          align-items: baseline;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .old-price {
+          color: #9ca3af;
+          text-decoration: line-through;
+          font-size: 1.3rem;
+          font-weight: 500;
         }
 
         .price-amount {

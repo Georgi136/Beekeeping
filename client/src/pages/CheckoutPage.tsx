@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import CheckoutForm from '../components/CheckoutForm'
+import SEO from '../components/SEO'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -9,11 +10,12 @@ export default function CheckoutPage() {
   if (cart.length === 0) {
     return (
       <div className="checkout-page">
+        <SEO title="Поръчка | САКИ" description="Завършване на поръчка в онлайн магазина на САКИ." path="/checkout" noindex />
         <div className="container">
           <div className="empty-state">
             <p>Няма продукти в количката</p>
             <button className="btn btn-primary" onClick={() => navigate('/products')}>
-              Назад към продукти
+              Назад към продуктите
             </button>
           </div>
         </div>
@@ -23,6 +25,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="checkout-page">
+      <SEO title="Завършване на поръчката | САКИ" description="Попълнете данните за доставка и изпратете поръчката си към САКИ." path="/checkout" noindex />
       <div className="container">
         <h1>Завършване на поръчката</h1>
 
@@ -33,14 +36,14 @@ export default function CheckoutPage() {
 
           <div className="checkout-summary">
             <div className="summary-card">
-              <h3>Вашата поръчка</h3>
+              <h3>Преглед на поръчката</h3>
 
               <div className="order-items">
                 {cart.map(item => (
                   <div key={item.productId} className="order-item">
                     <span className="item-name">{item.name}</span>
                     <span className="item-qty">x{item.quantity}</span>
-                    <span className="item-price">{(item.price * item.quantity).toFixed(2)} лв</span>
+                    <span className="item-price">{(item.price * item.quantity).toFixed(2)} лв.</span>
                   </div>
                 ))}
               </div>
@@ -48,16 +51,16 @@ export default function CheckoutPage() {
               <div className="summary-divider"></div>
 
               <div className="total-row">
-                <span>Общо</span>
-                <span className="total-price">{getTotalPrice().toFixed(2)} лв</span>
+                <span>Общо:</span>
+                <span className="total-price">{getTotalPrice().toFixed(2)} лв.</span>
               </div>
 
               <div className="info-box">
-                <p>Кратки бележки:</p>
+                <p>Важно:</p>
                 <ul>
                   <li>Проверете внимателно адреса</li>
-                  <li>Ще се свържем за потвърждение</li>
-                  <li>Доставка в рамките на 2-3 работни дни</li>
+                  <li>Ще се свържем с вас за потвърждение</li>
+                  <li>Срокът за доставка зависи от адреса и наличността</li>
                 </ul>
               </div>
             </div>

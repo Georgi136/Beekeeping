@@ -1,0 +1,27 @@
+{
+  "installCommand": "npm install && cd client && npm install && cd ../server && npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/index?path=sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/index?path=robots.txt"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?path=:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "/api/index?uploadPath=:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

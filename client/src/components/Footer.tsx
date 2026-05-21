@@ -10,9 +10,9 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <div className="footer-logo">
-                  <img src="/bee-logo.jpg" alt="САКИ Лого" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
+              <img src="/bee-logo.jpg" alt={language === 'bg' ? 'Лого на САКИ' : 'SAKI logo'} style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
             </div>
-            <p>{language === 'bg' ? 'Професионален пчеларски магазин в Дупница. Оборудване и консумативи за всякакви пчеларски нужди.' : 'Professional beekeeping shop in Dupnitsa. Equipment and supplies for all beekeeping needs.'}</p>
+            <p>{language === 'bg' ? 'Семеен пчеларски магазин в Дупница с натурален мед, пчелни продукти и оборудване за пчелари.' : 'A family beekeeping shop in Dupnitsa with natural honey, bee products, and equipment for beekeepers.'}</p>
           </div>
 
           <div className="footer-links">
@@ -21,16 +21,16 @@ export default function Footer() {
               <li><a href="#about">{t('navAbout')}</a></li>
               <li><a href="#products">{t('navProducts')}</a></li>
               <li><a href="#contact">{t('navContact')}</a></li>
-              <li><Link to="/admin" style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.8rem' }}>Админ</Link></li>
+              <li><Link to="/admin" rel="nofollow" style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.8rem' }}>{language === 'bg' ? 'Админ' : 'Admin'}</Link></li>
             </ul>
           </div>
 
           <div className="footer-contact">
             <h4>{language === 'bg' ? 'Контакти' : 'Contact'}</h4>
             <ul>
-              <li>📍 {language === 'bg' ? 'Ж.к. Дупница, Кооперативен пазар' : 'Dupnitsa, Cooperative Market'}</li>
+              <li>📍 {language === 'bg' ? 'Кооперативен пазар, павилион 5, Дупница' : 'Cooperative Market, Pavilion 5, Dupnitsa'}</li>
               <li>📞 089 551 7056</li>
-              <li>✉️ Info@sakimed.com</li>
+              <li>✉️ info@sakimed.com</li>
               <li>🌐 www.sakimed.com</li>
               <li>📘 <a href="https://facebook.com/Saki2008" target="_blank" rel="noopener noreferrer">Facebook</a></li>
             </ul>
@@ -38,7 +38,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} SAKI - {language === 'bg' ? 'Дупница' : 'Dupnitsa'}. {t('footerRights')}</p>
+          <p>© {new Date().getFullYear()} САКИ - {language === 'bg' ? 'Дупница' : 'Dupnitsa'}. {t('footerRights')}</p>
         </div>
       </div>
 

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { useLanguage } from '../i18n/LanguageContext'
 
 interface Product {
@@ -15,42 +14,42 @@ const products: Product[] = [
   {
     id: 1,
     name: 'Кошери и рамки',
-    description: 'Различни типове кошери - Дадан, Лангстрот, Uniwersalni рамки и восъчни листове',
+    description: 'Кошери Дадан-Блат и Лангстрот, рамки, восъчни основи и части за поддръжка на пчелина',
     icon: '🏠',
     image: PLACEHOLDER_IMAGE
   },
   {
     id: 2,
     name: 'Защитно облекло',
-    description: 'Пчеларски костюми, ръкавици, мрежи и други средства за защита',
+    description: 'Пчеларски костюми, ръкавици, було и практични средства за спокойна работа',
     icon: '👕',
     image: PLACEHOLDER_IMAGE
   },
   {
     id: 3,
     name: 'Центрофуги',
-    description: 'Ръчни и електрически центрофуги за ефективно извличане на мед',
+    description: 'Ръчни и електрически центрофуги за внимателно и удобно вадене на мед',
     icon: '🍯',
     image: PLACEHOLDER_IMAGE
   },
   {
     id: 4,
     name: 'Инвентар и инструменти',
-    description: 'Пчеларски ножове, вилици, димници и друг специализиран инвентар',
+    description: 'Пчеларски ножове, вилици, дималки и основни инструменти за всекидневна работа',
     icon: '🔧',
     image: PLACEHOLDER_IMAGE
   },
   {
     id: 5,
-    name: 'Подхранващи сиропи',
-    description: 'Качествени подхранващи сиропи и добавки за пчелите',
+    name: 'Подхранване за пчели',
+    description: 'Подхранващи сиропи и добавки за силни и добре поддържани пчелни семейства',
     icon: '🫗',
     image: PLACEHOLDER_IMAGE
   },
   {
     id: 6,
     name: 'Прополисов мехлем',
-    description: 'Природен прополисов мехлем за локална грижа и регенерация',
+    description: 'Натурален прополисов мехлем за локална грижа за кожата',
     icon: '🧴',
     image: PLACEHOLDER_IMAGE
   }
@@ -85,7 +84,7 @@ export default function Products() {
 
         <div className="products-cta">
           <p>{t('productsCta')}</p>
-          <Link to="/products" className="btn btn-primary">{t('productsCtaButton')}</Link>
+          <a href="#contact" className="btn btn-primary">{t('productsCtaButton')}</a>
         </div>
       </div>
 

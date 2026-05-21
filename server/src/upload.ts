@@ -1,29 +1,18 @@
 import multer from 'multer'
-import path from 'path'
-import fs from 'fs'
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../../uploads')
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
-}
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
-// Multer setup for file uploads
-const storage: multer.StorageEngine = multer.diskStorage({
-  destination: (
-    req: Express.Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void
-  ) => {
-    cb(null, uploadDir)
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_IMAGE_SIZE
   },
-  filename: (
-    req: Express.Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void
-  ) => {
-    cb(null, `${Date.now()}-${file.originalname}`)
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      cb(new Error('Можете да качвате само изображения'))
+      return
+    }
+
+    cb(null, true)
   }
 })
-
-export const upload = multer({ storage })

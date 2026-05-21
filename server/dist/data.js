@@ -12,38 +12,38 @@ exports.products = [
     // Honey products
     {
         id: 1,
-        name: 'Мед акация 1кг',
+        name: 'Акациев мед 1 кг',
         category: 'honey',
         price: 18,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Чист пчелен мед от акация, богат на полезни вещества',
+        description: 'Светъл и нежен акациев мед от собствени пчелини, подходящ за чай, закуска и ежедневна употреба',
         stock: 50
     },
     {
         id: 2,
-        name: 'Мед билков 1кг',
+        name: 'Билков мед 1 кг',
         category: 'honey',
         price: 16,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Поликлорен мед от разнообразни билки, уникален вкус',
+        description: 'Полифлорен мед от разнообразна растителност с плътен аромат и балансиран вкус',
         stock: 40
     },
     {
         id: 3,
-        name: 'Мед гречиха 1кг',
+        name: 'Мед от елда 1 кг',
         category: 'honey',
         price: 20,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Тъмен и интензивен мед от гречиха',
+        description: 'Тъмен мед с характерен, наситен вкус и богат аромат',
         stock: 30
     },
     {
         id: 4,
-        name: 'Прополис 20г',
+        name: 'Прополис 20 г',
         category: 'honey',
         price: 12,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Чист прополис, сърцевина на пчелния кошер',
+        description: 'Чист прополис от пчелина - натурален продукт за домашна употреба',
         stock: 25
     },
     // Equipment products
@@ -53,7 +53,7 @@ exports.products = [
         category: 'equipment',
         price: 120,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Полиуретанов кошер Лангстрот с кухи стени, отличен за начинаещи',
+        description: 'Полиуретанов кошер Лангстрот с добра изолация, подходящ както за начинаещи, така и за опитни пчелари',
         stock: 15
     },
     {
@@ -62,16 +62,16 @@ exports.products = [
         category: 'equipment',
         price: 85,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Защитен костюм за пчеларство, включва маска и ръкавици',
+        description: 'Удобен защитен костюм за пчеларство с було и ръкавици',
         stock: 20
     },
     {
         id: 7,
-        name: 'Пчеларски дим',
+        name: 'Пчеларска дималка',
         category: 'equipment',
         price: 45,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Ръчен дим за успокояване на пчелите, легла се отваря лесно',
+        description: 'Практична дималка за спокойно обслужване на пчелните семейства',
         stock: 18
     },
     {
@@ -80,7 +80,7 @@ exports.products = [
         category: 'equipment',
         price: 35,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Острозаточен нож за орязване на восъчни наставления',
+        description: 'Остър нож за разпечатване на восъчни пити преди центрофугиране',
         stock: 25
     },
     {
@@ -89,7 +89,7 @@ exports.products = [
         category: 'equipment',
         price: 15,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: 'Специална вилица за безопасно изваждане на рамките',
+        description: 'Специална пчеларска вилица за разпечатване и работа с рамки',
         stock: 30
     },
     {
@@ -98,7 +98,7 @@ exports.products = [
         category: 'equipment',
         price: 25,
         image: DEFAULT_PRODUCT_IMAGE,
-        description: '5 брой восъчни листове, висока честота',
+        description: 'Комплект от 5 восъчни основи с високо качество',
         stock: 40
     }
 ];

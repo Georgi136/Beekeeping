@@ -7,30 +7,32 @@ export const translations = {
     
     // Hero
     heroTitle: "Пчеларски магазин САКИ",
-    heroSubtitle: "Над 20 години опит в пчеларството. Натурален мед от собствени пчелини в Долистово и Коркина, сертифициран от БАБХ. Кошери, центрофуги и пчеларски инвентар.",
-    heroCtaProducts: "Разгледай продуктите",
-    heroCtaContact: "Свържи се с нас",
+    heroSubtitle: "Натурален мед от собствени пчелини в Долистово и Коркина, пчеларски инвентар и практични съвети от семейство с над 20 години опит.",
+    heroCtaProducts: "Разгледайте продуктите",
+    heroCtaContact: "Свържете се с нас",
+    heroCtaHoney: "Пчелни продукти",
+    heroCtaEquipment: "Всичко за пчеларя",
     
     // About
     aboutTitle: "За нас",
-    aboutSubtitle: "Семейна фирма с над 20 години опит в пчеларството и производството на натурален мед и пчелни продукти",
+    aboutSubtitle: "Семейна фирма с над 20 години опит в пчеларството, натуралния мед и пчелните продукти",
     storyTitle: "Нашата история",
     storyText1: "САКИ е семейна фирма, създадена с любов към пчеларството и чистия, натурален мед. Повече от 20 години се грижим за пчелите си и учим от природата. Натрупаният опит и внимание личат във всеки продукт, който предлагаме.",
-    storyText2: "Започнахме скромно, но останахме верни на най-важното – качество, честност и грижа към природата. За нас пчеларството не е просто работа, а начин на живот.",
+    storyText2: "Започнахме скромно, но останахме верни на най-важното: качество, честност и грижа към природата. За нас пчеларството не е просто работа, а начин на живот.",
     apiariesTitle: "Нашите пчелини",
     apiariesText1: "Пчелините ни се намират в селата Долистово и Коркина – места с чиста природа и богато разнообразие от растения. Това създава отлични условия за здрави пчелни семейства и качествен мед.",
     apiariesText2: "Грижим се за всяко пчелно семейство с внимание и отговорност, за да ви предложим чист мед – без добавки и компромиси.",
     certificationTitle: "Сертификация и качество",
-    certificationText1: "Нашият мед е сертифициран от БАБХ (Българска агенция по безопасност на храните), което гарантира неговото качество и чистота.",
-    certificationText2: "При нас ще намерите продукти, на които можете да се доверите – натурални, полезни и направени с грижа.",
+    certificationText1: "Медът ни е сертифициран от БАБХ (Българска агенция по безопасност на храните) и се произвежда с постоянен контрол върху качеството.",
+    certificationText2: "При нас ще намерите пчелни продукти, на които можете да разчитате - чисти, полезни и направени с грижа.",
     
     // About Cards
     cardExperience: "20+ години опит",
-    cardExperienceText: "Дългогодишен опит в пчеларството и производството на натурален мед.",
+    cardExperienceText: "Практически опит в пчеларството и производството на натурален мед.",
     cardApiaries: "Собствени пчелини",
     cardApiariesText: "Разполагаме с пчелини в Долистово и Коркина – сред чиста и богата природа.",
     cardCertification: "Сертифицирано качество",
-    cardCertificationText: "Медът ни е сертифициран от БАБХ и отговаря на всички стандарти за безопасност.",
+    cardCertificationText: "Медът ни е сертифициран от БАБХ и отговаря на изискванията за безопасност.",
     cardShop: "Магазин в Дупница",
     cardShopText: "Ще ни намерите на Кооперативния пазар, павилион 5 – за директни покупки и съвети.",
     cardProducts: "Богат асортимент",
@@ -49,14 +51,14 @@ export const translations = {
     
     // Products
     productsTitle: "Нашите продукти",
-    productsSubtitle: "Разгледайте нашия асортимент от пчеларско оборудване и продукти",
+    productsSubtitle: "Мед, пчелни продукти, кошери, рамки, центрофуги и инвентар за ежедневната работа в пчелина",
     productInquiry: "Запитване →",
-    productsCta: "Не намирате това, което търсите?",
-    productsCtaButton: "Свържете се с нас",
+    productsCta: "Търсите нещо конкретно?",
+    productsCtaButton: "Пишете ни",
     
     // Contact
     contactTitle: "Свържете се с нас",
-    contactSubtitle: "Имате въпроси? Пишете ни – ще отговорим възможно най-скоро.",
+    contactSubtitle: "Имате въпрос за мед, оборудване или доставка? Пишете ни - ще ви отговорим възможно най-скоро.",
     address: "Адрес",
     addressValue: "Кооперативен пазар, павилион 5, гр. Дупница",
     phone: "Телефон",
@@ -77,15 +79,15 @@ export const translations = {
     formPhone: "Телефон",
     formPhonePlaceholder: "+359 88 123 4567",
     formMessage: "Съобщение *",
-    formMessagePlaceholder: "Вашето съобщение...",
+    formMessagePlaceholder: "Напишете какво ви интересува...",
     formSubmit: "Изпрати",
     formSubmitting: "Изпращане...",
     formSuccess: "Съобщението е изпратено успешно! Ще се свържем с вас скоро.",
     formError: "Възникна грешка. Опитайте отново.",
     
     // Footer
-    footerTagline: "Вашият партньор в пчеларството",
-    footerRights: "© 2026 САКИ. Всички права запазени.",
+    footerTagline: "Вашият надежден партньор в пчеларството",
+    footerRights: "Всички права запазени.",
   },
 
   en: {
@@ -96,9 +98,11 @@ export const translations = {
     
     // Hero
     heroTitle: "SAKI Beekeeping Shop",
-    heroSubtitle: "Over 20 years of beekeeping experience. Natural honey from our own apiaries in Dolistovo and Korkina, certified by BABH. Hives, extractors, and beekeeping equipment.",
+    heroSubtitle: "Natural honey from our own apiaries in Dolistovo and Korkina, beekeeping equipment, and practical advice from a family with over 20 years of experience.",
     heroCtaProducts: "Browse Products",
     heroCtaContact: "Contact Us",
+    heroCtaHoney: "Bee Products",
+    heroCtaEquipment: "For Beekeepers",
     
     // About
     aboutTitle: "About Us",
@@ -110,7 +114,7 @@ export const translations = {
     apiariesText1: "Our apiaries are located in Dolistovo and Korkina – areas with clean nature and rich plant diversity, ideal for healthy bee colonies.",
     apiariesText2: "We care for every colony with attention and responsibility to deliver pure honey – with no additives and no compromises.",
     certificationTitle: "Certification & Quality",
-    certificationText1: "Our honey is certified by BABH (Bulgarian Food Safety Agency), guaranteeing its quality and purity.",
+    certificationText1: "Our honey is certified by BABH (Bulgarian Food Safety Agency) and produced with consistent quality control.",
     certificationText2: "With us, you’ll find products you can trust – natural, beneficial, and made with care.",
     
     // About Cards
@@ -138,14 +142,14 @@ export const translations = {
     
     // Products
     productsTitle: "Our Products",
-    productsSubtitle: "Explore our range of beekeeping equipment and products",
+    productsSubtitle: "Honey, bee products, hives, frames, extractors, and tools for everyday apiary work",
     productInquiry: "Inquiry →",
-    productsCta: "Can’t find what you need?",
+    productsCta: "Looking for something specific?",
     productsCtaButton: "Contact Us",
     
     // Contact
     contactTitle: "Contact Us",
-    contactSubtitle: "Have questions? Get in touch and we’ll reply as soon as possible.",
+    contactSubtitle: "Have a question about honey, equipment, or delivery? Send us a message and we’ll reply as soon as possible.",
     address: "Address",
     addressValue: "Cooperative Market, Pavilion 5, Dupnitsa",
     phone: "Phone",
@@ -166,7 +170,7 @@ export const translations = {
     formPhone: "Phone",
     formPhonePlaceholder: "+359 88 123 4567",
     formMessage: "Message *",
-    formMessagePlaceholder: "Your message...",
+    formMessagePlaceholder: "Tell us what you need...",
     formSubmit: "Send",
     formSubmitting: "Sending...",
     formSuccess: "Message sent successfully! We’ll get back to you soon.",
@@ -174,7 +178,7 @@ export const translations = {
     
     // Footer
     footerTagline: "Your trusted partner in beekeeping",
-    footerRights: "© 2026 SAKI. All rights reserved.",
+    footerRights: "All rights reserved.",
   }
 }
 

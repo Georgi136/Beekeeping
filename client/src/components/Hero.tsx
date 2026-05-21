@@ -5,11 +5,11 @@ export default function Hero() {
   const { t, language } = useLanguage()
 
   return (
-    <section className="hero">
+    <section id="hero" className="hero">
       <div className="hero-background">
         <img 
           src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
-          alt={language === 'bg' ? 'Пчеларски магазин САКИ - Натурален пчелен мед и пчеларски инвентар - Дупница' : 'SAKI Beekeeping Shop - Natural honey and beekeeping equipment - Dupnitsa'}
+          alt={language === 'bg' ? 'Пчеларски магазин САКИ в Дупница - натурален мед и пчеларски инвентар' : 'SAKI Beekeeping Shop in Dupnitsa - natural honey and beekeeping equipment'}
           className="hero-image"
         />
         <div className="hero-overlay"></div>
@@ -24,8 +24,8 @@ export default function Hero() {
             {t('heroSubtitle')}
           </p>
           <div className="hero-cta">
-            <Link to="/products?category=honey" className="btn btn-primary">Пчелните ни продукти</Link>
-            <Link to="/products?category=equipment" className="btn btn-secondary">Всичко за пчеларя</Link>
+            <Link to="/products?category=pchelni-produkti" className="btn btn-primary">{t('heroCtaHoney')}</Link>
+            <Link to="/products?category=pchelarstvo" className="btn btn-secondary">{t('heroCtaEquipment')}</Link>
           </div>
         </div>
         <div className="hero-visual">

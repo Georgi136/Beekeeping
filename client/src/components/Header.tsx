@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { getTotalItems } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
@@ -36,7 +36,7 @@ export default function Header() {
     <header className="header">
       <div className="container header-container">
         <Link 
-          to="/#Hero" 
+          to="/" 
           className="logo" 
           onClick={(e) => {
             setIsMenuOpen(false)
@@ -46,7 +46,7 @@ export default function Header() {
             }
           }}
         >
-            <img src="/bee-logo.jpg" alt="САКИ Лого" className="logo-img" />
+            <img src="/bee-logo.jpg" alt={language === 'bg' ? 'Лого на пчеларски магазин САКИ' : 'SAKI beekeeping shop logo'} className="logo-img" />
         </Link>
         
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
@@ -66,7 +66,7 @@ export default function Header() {
             {t('navContact')}
           </button>
           <Link to="/cart" className="nav-link cart-link" onClick={() => setIsMenuOpen(false)}>
-            🛒 Количка
+            🛒 {language === 'bg' ? 'Количка' : 'Cart'}
             {getTotalItems() > 0 && <span className="cart-badge">{getTotalItems()}</span>}
           </Link>
           <div className="nav-lang-switcher">
@@ -77,7 +77,7 @@ export default function Header() {
         <button 
           className="menu-toggle"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={language === 'bg' ? 'Отвори менюто' : 'Toggle menu'}
         >
           <span className={`hamburger ${isMenuOpen ? 'open' : ''}`}></span>
         </button>
@@ -143,7 +143,7 @@ export default function Header() {
           font-weight: 500;
           transition: color 0.3s ease;
           display: inline-block;
-          whitespace: nowrap;
+          white-space: nowrap;
           position: relative;
         }
 

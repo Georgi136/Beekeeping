@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { apiUrl } from '../config'
 import { useLanguage } from '../i18n/LanguageContext'
 
 interface FormData {
@@ -30,7 +31,7 @@ export default function Contact() {
     setStatus({ type: null, message: '' })
 
     try {
-      const response = await fetch('/api/contact', {
+      const response = await fetch(apiUrl('/api/contact'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -3,24 +3,26 @@ import { useCart } from '../context/CartContext'
 
 interface ProductCardProps {
   id: number
+  slug?: string
   name: string
   price: number
+  salePrice?: number | null
   image: string
-  onViewDetails?: (id: number) => void
+  onViewDetails?: (idOrSlug: number | string) => void
 }
 
-export default function ProductCard({ id, name, price, image, onViewDetails }: ProductCardProps) {
+export default function ProductCard({ id, slug, name, price, salePrice, image, onViewDetails }: ProductCardProps) {
   const { addToCart } = useCart()
+  const displayPrice = salePrice ?? price
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
-    addToCart({ id, name, price, image }, 1)
-    // Could add a toast notification here
+    addToCart({ id, slug, name, price, salePrice, image }, 1)
   }
 
   const handleCardClick = () => {
     if (onViewDetails) {
-      onViewDetails(id)
+      onViewDetails(slug || id)
     }
   }
 
@@ -31,17 +33,20 @@ export default function ProductCard({ id, name, price, image, onViewDetails }: P
       </div>
       <div className="product-card-content">
         <h3 className="product-card-name">{name}</h3>
-        <div className="product-card-price">{price} лв</div>
+        <div className="product-card-price">
+          {salePrice && <span className="old-price">{price} лв.</span>}
+          <span>{displayPrice} лв.</span>
+        </div>
         <div className="product-card-actions">
           {onViewDetails && (
             <button 
               className="btn btn-link" 
               onClick={(e) => {
                 e.stopPropagation();
-                onViewDetails(id);
+                onViewDetails(slug || id);
               }}
             >
-              Детаили
+              Детайли
             </button>
           )}
           <button 
@@ -108,6 +113,17 @@ export default function ProductCard({ id, name, price, image, onViewDetails }: P
           font-weight: 700;
           color: var(--color-primary);
           margin-bottom: 1rem;
+          display: flex;
+          gap: 0.5rem;
+          align-items: baseline;
+          flex-wrap: wrap;
+        }
+
+        .old-price {
+          color: #9ca3af;
+          text-decoration: line-through;
+          font-size: 1rem;
+          font-weight: 500;
         }
 
         .product-card-actions {

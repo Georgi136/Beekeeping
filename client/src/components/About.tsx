@@ -31,22 +31,14 @@ export default function About() {
 
           <div className="story-section">
             <h3>{t('apiariesTitle')}</h3>
-            <p>
-              {language === 'bg' ? 'Пчелините ни са разположени в селата' : 'Our apiaries are located in the villages of'} <strong>{language === 'bg' ? 'Долистово и Коркина' : 'Dolistovo and Korkina'}</strong>, {language === 'bg' ? 'където природата предоставя перфектни условия за развитие на здравите пчелни семейства. Тези региони са известни с разнообразието на цветя и чистотата на окръжаващата среда, което гарантира нашия' : 'where nature provides perfect conditions for developing healthy bee colonies. These regions are known for their flower diversity and clean environment, which guarantees our'} <strong>{language === 'bg' ? 'натурален пчелен мед' : 'natural honey'}</strong> {language === 'bg' ? 'от най-висока категория.' : 'of the highest quality.'}
-            </p>
-            <p>
-              {language === 'bg' ? 'Всяка пчелна колония се грижи с внимание и опит, осигурявайки оптимални условия за производство на чист мед без химикали и добавки.' : 'Each bee colony is cared for with attention and experience, ensuring optimal conditions for producing pure honey without chemicals or additives.'}
-            </p>
+            <p>{t('apiariesText1')}</p>
+            <p>{t('apiariesText2')}</p>
           </div>
 
           <div className="story-section">
             <h3>{t('certificationTitle')}</h3>
-            <p>
-              {language === 'bg' ? 'Нашия' : 'Our'} <strong>{language === 'bg' ? 'пчелен мед е сертифициран от БАБХ' : 'honey is certified by BABH'}</strong> {language === 'bg' ? '(Българска агенция по безопасност на храните), което гарантира качеството, чистотата и съответствието с всички международни стандарти. Сертификацията от БАБХ е доказателство за нашия ангажимент към здравето и доверието на нашите клиенти.' : '(Bulgarian Food Safety Agency), which guarantees quality, purity, and compliance with all international standards. BABH certification is proof of our commitment to the health and trust of our customers.'}
-            </p>
-            <p>
-              {language === 'bg' ? 'Предлагаме пчелни продукти, които можете да консумирате с пълна уверност в тяхната чистота и полезност.' : 'We offer bee products that you can consume with complete confidence in their purity and benefits.'}
-            </p>
+            <p>{t('certificationText1')}</p>
+            <p>{t('certificationText2')}</p>
           </div>
         </div>
         
