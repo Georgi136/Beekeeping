@@ -3,6 +3,7 @@ import SEO from '../components/SEO'
 import { apiUrl } from '../config'
 
 type Tab = 'dashboard' | 'sales' | 'products' | 'reports' | 'expenses' | 'wax'
+type SalesView = 'quick' | 'all'
 type ReportTab = 'monthly' | 'daily' | 'products' | 'expenses' | 'low-stock'
 
 interface ErpProduct {
@@ -148,6 +149,10 @@ export default function AdminPage() {
   const [reports, setReports] = useState<Reports | null>(null)
   const [waxTransactions, setWaxTransactions] = useState<WaxTransaction[]>([])
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
+  const [showProductEditor, setShowProductEditor] = useState(false)
+  const [editingSaleId, setEditingSaleId] = useState<number | null>(null)
+  const [salesView, setSalesView] = useState<SalesView>('quick')
+  const [saleProductSearch, setSaleProductSearch] = useState('')
   const [reportTab, setReportTab] = useState<ReportTab>('monthly')
   const [productForm, setProductForm] = useState(emptyProduct)
   const [saleForm, setSaleForm] = useState({ saleDate: today(), productId: '', quantity: '1', unitPriceEur: '', paymentMethod: 'CASH', notes: '' })
@@ -249,6 +254,7 @@ export default function AdminPage() {
 
   function editProduct(product: ErpProduct) {
     setEditingProductId(product.id)
+    setShowProductEditor(true)
     setProductForm({
       sku: product.sku || '',
       name: product.name,
@@ -262,6 +268,9 @@ export default function AdminPage() {
       active: product.active,
       notes: product.notes || ''
     })
+    setTimeout(() => {
+      document.querySelector('.erp-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
   }
 
   async function submitProduct(e: React.FormEvent) {
@@ -282,6 +291,7 @@ export default function AdminPage() {
       })
       setProductForm(emptyProduct)
       setEditingProductId(null)
+      setShowProductEditor(false)
       await loadData()
       setStatus('Продуктът е запазен.')
     } catch (err) {
@@ -291,12 +301,21 @@ export default function AdminPage() {
     }
   }
 
+  function openNewProductEditor() {
+    setEditingProductId(null)
+    setProductForm(emptyProduct)
+    setShowProductEditor(true)
+    setTimeout(() => {
+      document.querySelector('.storage-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+  }
+
   async function submitSale(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     try {
-      await adminFetch('/api/admin/erp/sales', {
-        method: 'POST',
+      await adminFetch(editingSaleId ? `/api/admin/erp/sales/${editingSaleId}` : '/api/admin/erp/sales', {
+        method: editingSaleId ? 'PUT' : 'POST',
         body: JSON.stringify({
           ...saleForm,
           productId: Number(saleForm.productId),
@@ -304,11 +323,56 @@ export default function AdminPage() {
           unitPriceEur: saleForm.unitPriceEur ? Number(saleForm.unitPriceEur) : undefined
         })
       })
+      setEditingSaleId(null)
       setSaleForm({ saleDate: today(), productId: '', quantity: '1', unitPriceEur: '', paymentMethod: 'CASH', notes: '' })
       await loadData()
-      setStatus('Продажбата е добавена и складът е намален.')
+      setStatus(editingSaleId ? 'Продажбата е редактирана и складът е коригиран.' : 'Продажбата е добавена и складът е намален.')
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Грешка при продажба.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function editSale(sale: ErpSale) {
+    setEditingSaleId(sale.id)
+    setTab('sales')
+    setSalesView('all')
+    setSaleForm({
+      saleDate: sale.saleDate.slice(0, 10),
+      productId: String(sale.product.id),
+      quantity: String(sale.quantity),
+      unitPriceEur: String(sale.unitPriceEur),
+      paymentMethod: sale.paymentMethod,
+      notes: sale.notes || ''
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function openAllSales() {
+    setTab('sales')
+    setSalesView('all')
+  }
+
+  function selectSaleProduct(product: ErpProduct) {
+    setSaleForm({ ...saleForm, productId: String(product.id), unitPriceEur: String(product.sellPriceEur) })
+    setSaleProductSearch('')
+  }
+
+  async function removeSale(sale: ErpSale) {
+    const confirmed = window.confirm(`Да изтрия ли продажбата за "${sale.product.name}"? Количеството ще бъде върнато в склада.`)
+    if (!confirmed) return
+    setLoading(true)
+    try {
+      await adminFetch(`/api/admin/erp/sales/${sale.id}`, { method: 'DELETE' })
+      if (editingSaleId === sale.id) {
+        setEditingSaleId(null)
+        setSaleForm({ saleDate: today(), productId: '', quantity: '1', unitPriceEur: '', paymentMethod: 'CASH', notes: '' })
+      }
+      await loadData()
+      setStatus('Продажбата е изтрита и количеството е върнато в склада.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Грешка при изтриване.')
     } finally {
       setLoading(false)
     }
@@ -345,6 +409,10 @@ export default function AdminPage() {
   }
 
   const selectedSaleProduct = products.find((product) => String(product.id) === saleForm.productId)
+  const quickSaleProducts = products
+    .filter((product) => product.active)
+    .filter((product) => product.name.toLowerCase().includes(saleProductSearch.toLowerCase()) || String(product.sku || '').includes(saleProductSearch))
+    .slice(0, saleProductSearch ? 12 : 8)
   const filteredProducts = products.filter((product) => {
     const matchesSearch = [product.sku, product.name, product.notes].join(' ').toLowerCase().includes(storageSearch.toLowerCase())
     const matchesCategory = storageCategory === 'ALL' || product.category === storageCategory
@@ -418,7 +486,16 @@ export default function AdminPage() {
                 {dashboard.lowStockProducts.map((product) => <Row key={product.id} title={product.name} meta={`${product.stockQuantity} ${unitLabels[product.unit]} минимум ${product.minStockQuantity}`} />)}
               </Panel>
               <Panel title="Последни продажби">
-                {dashboard.latestSales.map((sale) => <Row key={sale.id} title={sale.product.name} meta={`${sale.quantity} x ${eur(sale.unitPriceEur)} = ${eur(sale.totalEur)}`} />)}
+                <button className="inline-action" onClick={openAllSales}>Виж всички продажби</button>
+                {dashboard.latestSales.map((sale) => (
+                  <div className="row-with-action" key={sale.id}>
+                    <Row title={sale.product.name} meta={`${sale.quantity} x ${eur(sale.unitPriceEur)} = ${eur(sale.totalEur)}`} />
+                    <div className="mini-actions">
+                      <button className="mini-btn" onClick={() => editSale(sale)}>Редакция</button>
+                      <button className="mini-btn danger" onClick={() => removeSale(sale)}>Изтрий</button>
+                    </div>
+                  </div>
+                ))}
               </Panel>
               <Panel title="Последни сделки с восък">
                 {dashboard.latestWaxTransactions.map((item) => <Row key={item.id} title={item.customerName} meta={`Баланс ${eur(item.balanceEur)} | восък ${item.waxReceivedKg} кг`} />)}
@@ -428,67 +505,121 @@ export default function AdminPage() {
         )}
 
         {tab === 'sales' && (
-          <section className="erp-grid">
-            <form className="erp-card" onSubmit={submitSale}>
-              <h2>Бърза продажба</h2>
-              <label>Дата</label>
-              <input type="date" value={saleForm.saleDate} onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })} />
-              <label>Продукт</label>
-              <select value={saleForm.productId} onChange={(e) => {
-                const product = products.find((item) => String(item.id) === e.target.value)
-                setSaleForm({ ...saleForm, productId: e.target.value, unitPriceEur: product ? String(product.sellPriceEur) : '' })
-              }} required>
-                <option value="">Изберете продукт</option>
-                {products.filter((product) => product.active).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-              </select>
-              <div className="two">
-                <label>Количество<input type="number" step="0.001" min="0.001" value={saleForm.quantity} onChange={(e) => setSaleForm({ ...saleForm, quantity: e.target.value })} required /></label>
-                <label>Цена EUR<input type="number" step="0.01" min="0" value={saleForm.unitPriceEur} onChange={(e) => setSaleForm({ ...saleForm, unitPriceEur: e.target.value })} /></label>
+          <section className="sales-layout">
+            <form className="erp-card sale-card" onSubmit={submitSale}>
+              <div className="sale-card-head">
+                <div>
+                  <h2>{editingSaleId ? 'Редакция на продажба' : 'Бърза продажба'}</h2>
+                  <p>{selectedSaleProduct ? selectedSaleProduct.name : 'Изберете продукт и въведете количество'}</p>
+                </div>
+                <input type="date" value={saleForm.saleDate} onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })} />
               </div>
-              <label>Плащане</label>
-              <select value={saleForm.paymentMethod} onChange={(e) => setSaleForm({ ...saleForm, paymentMethod: e.target.value })}>
-                {Object.entries(paymentLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-              <textarea placeholder="Бележка" value={saleForm.notes} onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })} />
-              <div className="form-total">Общо: {eur(Number(saleForm.quantity || 0) * Number(saleForm.unitPriceEur || selectedSaleProduct?.sellPriceEur || 0))}</div>
-              <button className="erp-btn primary" disabled={loading}>Добави продажба</button>
+
+              <div className="quick-search">
+                <input placeholder="Търси продукт или ИД" value={saleProductSearch} onChange={(e) => setSaleProductSearch(e.target.value)} />
+                <select value={saleForm.productId} onChange={(e) => {
+                  const product = products.find((item) => String(item.id) === e.target.value)
+                  if (product) selectSaleProduct(product)
+                  else setSaleForm({ ...saleForm, productId: '', unitPriceEur: '' })
+                }} required>
+                  <option value="">Всички продукти</option>
+                  {products.filter((product) => product.active).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+                </select>
+              </div>
+
+              <div className="quick-products">
+                {quickSaleProducts.map((product) => (
+                  <button type="button" key={product.id} className={saleForm.productId === String(product.id) ? 'selected' : ''} onClick={() => selectSaleProduct(product)}>
+                    <strong>{product.name}</strong>
+                    <span>{eur(product.sellPriceEur)} · {product.stockQuantity} {unitLabels[product.unit]}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="sale-input-grid">
+                <label>Количество<input inputMode="decimal" type="number" step="0.001" min="0.001" value={saleForm.quantity} onChange={(e) => setSaleForm({ ...saleForm, quantity: e.target.value })} required /></label>
+                <label>Цена EUR<input inputMode="decimal" type="number" step="0.01" min="0" value={saleForm.unitPriceEur} onChange={(e) => setSaleForm({ ...saleForm, unitPriceEur: e.target.value })} /></label>
+              </div>
+
+              <div className="payment-pills">
+                {Object.entries(paymentLabels).map(([key, label]) => (
+                  <button type="button" key={key} className={saleForm.paymentMethod === key ? 'active' : ''} onClick={() => setSaleForm({ ...saleForm, paymentMethod: key })}>{label}</button>
+                ))}
+              </div>
+
+              <textarea className="sale-note" placeholder="Бележка" value={saleForm.notes} onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })} />
+              <div className="sale-total-bar">
+                <span>Общо</span>
+                <strong>{eur(Number(saleForm.quantity || 0) * Number(saleForm.unitPriceEur || selectedSaleProduct?.sellPriceEur || 0))}</strong>
+                <small>{bgn(Number(saleForm.quantity || 0) * Number(saleForm.unitPriceEur || selectedSaleProduct?.sellPriceEur || 0))}</small>
+              </div>
+              <div className="actions sale-actions">
+                <button className="erp-btn primary" disabled={loading}>{editingSaleId ? 'Запази продажба' : 'Продай'}</button>
+                {editingSaleId && <button type="button" className="erp-btn ghost" onClick={() => { setEditingSaleId(null); setSaleForm({ saleDate: today(), productId: '', quantity: '1', unitPriceEur: '', paymentMethod: 'CASH', notes: '' }) }}>Отказ</button>}
+              </div>
             </form>
-            <Panel title="Последни продажби">
-              {sales.map((sale) => <Row key={sale.id} title={sale.product.name} meta={`${new Date(sale.saleDate).toLocaleDateString('bg-BG')} | ${sale.quantity} | ${eur(sale.totalEur)} | печалба ${eur(sale.profitEur)}`} />)}
-            </Panel>
+            <section className="sales-main">
+              <nav className="report-tabs">
+                <button className={salesView === 'quick' ? 'active' : ''} onClick={() => setSalesView('quick')}>Последни</button>
+                <button className={salesView === 'all' ? 'active' : ''} onClick={() => setSalesView('all')}>Всички продажби</button>
+              </nav>
+              {salesView === 'quick' && (
+                <Panel title="Последни продажби">
+                  <button className="inline-action" onClick={openAllSales}>Виж всички продажби</button>
+                  {sales.slice(0, 12).map((sale) => (
+                    <div className="row-with-action" key={sale.id}>
+                      <Row title={sale.product.name} meta={`${new Date(sale.saleDate).toLocaleDateString('bg-BG')} | ${sale.quantity} | ${eur(sale.totalEur)} | печалба ${eur(sale.profitEur)}`} />
+                      <div className="mini-actions">
+                        <button className="mini-btn" onClick={() => editSale(sale)}>Редакция</button>
+                        <button className="mini-btn danger" onClick={() => removeSale(sale)}>Изтрий</button>
+                      </div>
+                    </div>
+                  ))}
+                </Panel>
+              )}
+              {salesView === 'all' && (
+                <div className="report-table-wrap">
+                  <table className="report-table">
+                    <thead>
+                      <tr>
+                        <th>Дата</th>
+                        <th>Продукт</th>
+                        <th>Количество</th>
+                        <th>Цена</th>
+                        <th>Оборот</th>
+                        <th>Печалба</th>
+                        <th>Плащане</th>
+                        <th>Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sales.map((sale) => (
+                        <tr key={sale.id}>
+                          <td data-label="Дата">{new Date(sale.saleDate).toLocaleDateString('bg-BG')}</td>
+                          <td data-label="Продукт">{sale.product.name}</td>
+                          <td data-label="Количество">{sale.quantity}</td>
+                          <td data-label="Цена">{eur(sale.unitPriceEur)}</td>
+                          <td data-label="Оборот">{eur(sale.totalEur)}<small>{bgn(sale.totalEur)}</small></td>
+                          <td data-label="Печалба">{eur(sale.profitEur)}</td>
+                          <td data-label="Плащане">{paymentLabels[sale.paymentMethod]}</td>
+                          <td data-label="Действия">
+                            <div className="mini-actions">
+                              <button className="mini-btn" onClick={() => editSale(sale)}>Редакция</button>
+                              <button className="mini-btn danger" onClick={() => removeSale(sale)}>Изтрий</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </section>
         )}
 
         {tab === 'products' && (
           <section className="storage-layout">
-            <form className="erp-card" onSubmit={submitProduct}>
-              <h2>{editingProductId ? 'Редакция' : 'Нов продукт'}</h2>
-              <input placeholder="ИД / код от склада" value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })} />
-              <input placeholder="Име" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required />
-              <div className="two">
-                <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
-                  {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
-                <select value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}>
-                  {Object.entries(unitLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
-              </div>
-              <div className="two">
-                <input type="number" step="0.01" min="0" placeholder="Продажна EUR" value={productForm.sellPriceEur} onChange={(e) => setProductForm({ ...productForm, sellPriceEur: e.target.value })} required />
-                <input type="number" step="0.01" min="0" placeholder="Доставна EUR" value={productForm.costPriceEur} onChange={(e) => setProductForm({ ...productForm, costPriceEur: e.target.value })} required />
-              </div>
-              <div className="two">
-                <input type="number" step="0.001" min="0" placeholder="Наличност" value={productForm.stockQuantity} onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })} />
-                <input type="number" step="0.001" min="0" placeholder="Минимум" value={productForm.minStockQuantity} onChange={(e) => setProductForm({ ...productForm, minStockQuantity: e.target.value })} />
-              </div>
-              <input type="number" step="0.001" min="0" placeholder="Общо продадени" value={productForm.totalSoldQuantity} onChange={(e) => setProductForm({ ...productForm, totalSoldQuantity: e.target.value })} />
-              <label className="check"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })} /> Активен</label>
-              <textarea placeholder="Бележки" value={productForm.notes} onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })} />
-              <div className="actions">
-                <button className="erp-btn primary" disabled={loading}>Запази</button>
-                {editingProductId && <button type="button" className="erp-btn ghost" onClick={() => { setEditingProductId(null); setProductForm(emptyProduct) }}>Отказ</button>}
-              </div>
-            </form>
             <section className="storage-main">
               <div className="storage-toolbar">
                 <input placeholder="Търсене по име, ИД или бележка" value={storageSearch} onChange={(e) => setStorageSearch(e.target.value)} />
@@ -501,13 +632,44 @@ export default function AdminPage() {
                   <option value="LOW">Ниска наличност</option>
                   <option value="ACTIVE">Активни</option>
                 </select>
+                <button className="erp-btn primary" onClick={openNewProductEditor}>Нов продукт</button>
               </div>
+              {showProductEditor && (
+                <form className="storage-editor" onSubmit={submitProduct}>
+                  <div className="storage-editor-head">
+                    <h2>{editingProductId ? 'Редакция на продукт' : 'Нов продукт'}</h2>
+                    <button type="button" className="mini-btn" onClick={() => { setShowProductEditor(false); setEditingProductId(null); setProductForm(emptyProduct) }}>Затвори</button>
+                  </div>
+                  <div className="editor-grid">
+                    <input placeholder="ИД / код от склада" value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })} />
+                    <input placeholder="Име" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required />
+                    <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
+                      {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                    </select>
+                    <select value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}>
+                      {Object.entries(unitLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                    </select>
+                    <input type="number" step="0.01" min="0" placeholder="Продажна EUR" value={productForm.sellPriceEur} onChange={(e) => setProductForm({ ...productForm, sellPriceEur: e.target.value })} required />
+                    <input type="number" step="0.01" min="0" placeholder="Доставна EUR" value={productForm.costPriceEur} onChange={(e) => setProductForm({ ...productForm, costPriceEur: e.target.value })} required />
+                    <input type="number" step="0.001" min="0" placeholder="Наличност" value={productForm.stockQuantity} onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })} />
+                    <input type="number" step="0.001" min="0" placeholder="Минимум" value={productForm.minStockQuantity} onChange={(e) => setProductForm({ ...productForm, minStockQuantity: e.target.value })} />
+                    <input type="number" step="0.001" min="0" placeholder="Общо продадени" value={productForm.totalSoldQuantity} onChange={(e) => setProductForm({ ...productForm, totalSoldQuantity: e.target.value })} />
+                    <label className="check"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })} /> Активен</label>
+                    <textarea placeholder="Бележки" value={productForm.notes} onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })} />
+                    <div className="actions">
+                      <button className="erp-btn primary" disabled={loading}>Запази</button>
+                      {editingProductId && <button type="button" className="erp-btn ghost" onClick={() => { setEditingProductId(null); setProductForm(emptyProduct); setShowProductEditor(false) }}>Отказ</button>}
+                    </div>
+                  </div>
+                </form>
+              )}
               <section className="metric-grid compact">
                 <div><span>Артикули</span><strong>{filteredProducts.length}</strong><small>показани</small></div>
                 <div><span>Ниска наличност</span><strong>{storageTotals.low}</strong><small>за проверка</small></div>
                 <div><span>Стойност склад</span><strong>{eur(storageTotals.stockValue)}</strong><small>{bgn(storageTotals.stockValue)}</small></div>
                 <div><span>Продажна стойност</span><strong>{eur(storageTotals.sellValue)}</strong><small>{bgn(storageTotals.sellValue)}</small></div>
               </section>
+              <div className="storage-hint">Таблицата се скролира вертикално и хоризонтално.</div>
               <div className="storage-table-wrap">
                 <table className="storage-table">
                   <thead>
@@ -751,9 +913,9 @@ const erpStyles = `
   .erp-login,
   .erp-shell {
     min-height: 100vh;
-    background: #f4f6f3;
+    background: #eef2ec;
     color: #172018;
-    padding: 28px 0 44px;
+    padding: 18px 0 36px;
   }
 
   .erp-login {
@@ -762,7 +924,7 @@ const erpStyles = `
   }
 
   .erp-wrap {
-    width: min(1180px, calc(100% - 28px));
+    width: min(1240px, calc(100% - 24px));
     margin: 0 auto;
   }
 
@@ -772,8 +934,8 @@ const erpStyles = `
   .metric-grid > div {
     background: #fff;
     border: 1px solid #dfe5dc;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(26, 42, 28, 0.06);
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(26, 42, 28, 0.06);
   }
 
   .login-box,
@@ -792,7 +954,11 @@ const erpStyles = `
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #dfe5dc;
+    border-radius: 6px;
   }
 
   .erp-header h1,
@@ -817,13 +983,17 @@ const erpStyles = `
   }
 
   .erp-tabs {
-    margin: 0 0 16px;
+    margin: 0 0 14px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #dfe5dc;
+    border-radius: 6px;
   }
 
   .erp-tabs button,
   .erp-btn {
     min-height: 42px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: 1px solid #cfd9ca;
     background: #fff;
     color: #1f3822;
@@ -839,8 +1009,8 @@ const erpStyles = `
 
   .erp-tabs button.active,
   .erp-btn.primary {
-    background: #2f6b3a;
-    border-color: #2f6b3a;
+    background: #225c32;
+    border-color: #225c32;
     color: #fff;
   }
 
@@ -851,12 +1021,12 @@ const erpStyles = `
   .metric-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 14px;
   }
 
   .metric-grid > div {
-    padding: 16px;
+    padding: 14px;
     display: grid;
     gap: 4px;
   }
@@ -886,22 +1056,209 @@ const erpStyles = `
     align-items: start;
   }
 
-  .storage-layout {
+  .sales-layout {
     display: grid;
-    grid-template-columns: minmax(300px, 360px) 1fr;
+    grid-template-columns: minmax(330px, 470px) minmax(0, 1fr);
     gap: 14px;
     align-items: start;
+  }
+
+  .sales-main {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .sale-card {
+    position: sticky;
+    top: 12px;
+    gap: 14px;
+    border-color: #cfd9ca;
+  }
+
+  .sale-card-head {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .sale-card-head p {
+    margin: 4px 0 0;
+    color: #687366;
+    font-weight: 700;
+  }
+
+  .quick-search,
+  .sale-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .quick-products {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 250px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .quick-products button {
+    display: grid;
+    gap: 4px;
+    min-height: 68px;
+    border: 1px solid #d5ded0;
+    border-radius: 6px;
+    background: #fbfcfa;
+    color: #172018;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .quick-products button.selected {
+    border-color: #225c32;
+    background: #eaf3e6;
+    box-shadow: inset 0 0 0 1px #225c32;
+  }
+
+  .quick-products span {
+    color: #687366;
+    font-size: 0.86rem;
+  }
+
+  .payment-pills {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .payment-pills button {
+    min-height: 44px;
+    border: 1px solid #cfd9ca;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f3822;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .payment-pills button.active {
+    background: #225c32;
+    border-color: #225c32;
+    color: #fff;
+  }
+
+  .sale-note {
+    min-height: 58px;
+  }
+
+  .sale-total-bar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: end;
+    padding: 14px;
+    border: 1px solid #d7dfd3;
+    border-radius: 6px;
+    background: #f8faf6;
+  }
+
+  .sale-total-bar span {
+    color: #687366;
+    font-weight: 800;
+  }
+
+  .sale-total-bar strong {
+    font-size: 1.65rem;
+    color: #172018;
+  }
+
+  .sale-total-bar small {
+    grid-column: 2;
+    color: #687366;
+    font-weight: 800;
+  }
+
+  .sale-actions .erp-btn.primary {
+    min-height: 50px;
+    flex: 1;
+    font-size: 1.05rem;
+  }
+  }
+
+  .storage-layout {
+    display: block;
   }
 
   .storage-main {
     display: grid;
     gap: 12px;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #dfe5dc;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(26, 42, 28, 0.06);
+    overflow: hidden;
+  }
+
+  .storage-main .metric-grid {
+    padding: 0 12px;
+  }
+
+  .storage-hint {
+    padding: 0 12px;
+    color: #687366;
+    font-size: 0.86rem;
+    font-weight: 700;
   }
 
   .storage-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) 180px 160px;
+    grid-template-columns: minmax(260px, 1fr) 190px 170px 140px;
     gap: 8px;
+    padding: 12px;
+    background: #f8faf6;
+    border-bottom: 1px solid #dfe5dc;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .storage-editor {
+    margin: 12px;
+    padding: 14px;
+    border: 1px solid #d5ded0;
+    border-radius: 6px;
+    background: #fbfcfa;
+  }
+
+  .storage-editor-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .storage-editor-head h2 {
+    margin: 0;
+    color: #1f3822;
+  }
+
+  .editor-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+
+  .editor-grid textarea {
+    grid-column: span 2;
+    min-height: 48px;
   }
 
   .metric-grid.compact {
@@ -913,11 +1270,11 @@ const erpStyles = `
   }
 
   .storage-table-wrap {
+    max-height: min(66vh, 720px);
     background: #fff;
-    border: 1px solid #dfe5dc;
-    border-radius: 8px;
+    border-top: 1px solid #dfe5dc;
     overflow: auto;
-    box-shadow: 0 8px 24px rgba(26, 42, 28, 0.06);
+    -webkit-overflow-scrolling: touch;
   }
 
   .storage-table {
@@ -961,6 +1318,10 @@ const erpStyles = `
     margin-top: 2px;
   }
 
+  .storage-table tbody tr:nth-child(even):not(.low) {
+    background: #fbfcfa;
+  }
+
   .erp-panel {
     padding: 16px;
   }
@@ -978,6 +1339,47 @@ const erpStyles = `
     padding: 10px 0;
     border-bottom: 1px solid #edf0eb;
     text-align: left;
+  }
+
+  .row-with-action {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid #edf0eb;
+  }
+
+  .row-with-action .erp-row {
+    border-bottom: 0;
+  }
+
+  .inline-action,
+  .mini-btn {
+    min-height: 34px;
+    border-radius: 6px;
+    border: 1px solid #cfd9ca;
+    background: #eef3ea;
+    color: #1f3822;
+    padding: 0 10px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .inline-action {
+    justify-self: start;
+  }
+
+  .mini-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mini-btn.danger {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
   }
 
   .product-row {
@@ -1119,19 +1521,42 @@ const erpStyles = `
     .metric-grid,
     .erp-columns,
     .erp-grid,
+    .sales-layout,
     .storage-layout {
       grid-template-columns: 1fr;
     }
 
+    .sale-card {
+      position: static;
+    }
+
     .storage-toolbar {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
+      position: static;
+    }
+
+    .storage-toolbar input {
+      grid-column: 1 / -1;
+    }
+
+    .editor-grid {
+      grid-template-columns: 1fr 1fr;
     }
   }
 
   @media (max-width: 620px) {
+    .erp-shell {
+      padding-top: 8px;
+    }
+
+    .erp-wrap {
+      width: min(100% - 16px, 1240px);
+    }
+
     .erp-header {
       align-items: stretch;
       flex-direction: column;
+      padding: 10px;
     }
 
     .erp-tabs {
@@ -1144,13 +1569,85 @@ const erpStyles = `
       grid-template-columns: 1fr 1fr;
     }
 
+    .storage-table-wrap {
+      max-width: calc(100vw - 28px);
+      max-height: 62vh;
+    }
+
+    .storage-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .storage-toolbar input {
+      grid-column: auto;
+    }
+
+    .editor-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .editor-grid textarea {
+      grid-column: auto;
+    }
+
     .two {
       grid-template-columns: 1fr;
     }
 
-    .storage-table {
-      min-width: 0;
-      display: block;
+    .sale-card {
+      padding: 12px;
+      margin-inline: -2px;
+    }
+
+    .sale-card-head,
+    .quick-search,
+    .sale-input-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .quick-products {
+      grid-template-columns: 1fr 1fr;
+      max-height: 230px;
+    }
+
+    .quick-products button {
+      min-height: 76px;
+      padding: 9px;
+    }
+
+    .payment-pills {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .payment-pills button,
+    input,
+    textarea,
+    select {
+      min-height: 48px;
+    }
+
+    .sale-total-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 3;
+      margin-inline: -12px;
+      border-left: 0;
+      border-right: 0;
+      border-radius: 0;
+      box-shadow: 0 -8px 18px rgba(23, 32, 24, 0.08);
+    }
+
+    .sale-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 4;
+      background: #fff;
+      padding-top: 8px;
+      margin-bottom: -4px;
+    }
+
+    .sale-actions .erp-btn {
+      width: 100%;
     }
 
     .report-table {
@@ -1158,14 +1655,10 @@ const erpStyles = `
       display: block;
     }
 
-    .storage-table thead,
     .report-table thead {
       display: none;
     }
 
-    .storage-table tbody,
-    .storage-table tr,
-    .storage-table td,
     .report-table tbody,
     .report-table tr,
     .report-table td {
@@ -1173,13 +1666,11 @@ const erpStyles = `
       width: 100%;
     }
 
-    .storage-table tr,
     .report-table tr {
       padding: 10px;
       border-bottom: 1px solid #dfe5dc;
     }
 
-    .storage-table td,
     .report-table td {
       border: 0;
       padding: 6px 0;
@@ -1188,7 +1679,15 @@ const erpStyles = `
       gap: 8px;
     }
 
-    .storage-table td::before,
+    .row-with-action {
+      grid-template-columns: 1fr;
+      padding-bottom: 10px;
+    }
+
+    .mini-btn {
+      justify-self: start;
+    }
+
     .report-table td::before {
       content: attr(data-label);
       color: #687366;

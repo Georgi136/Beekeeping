@@ -29,6 +29,8 @@ export const erpSaleSchema = z.object({
   allowNegativeStock: z.coerce.boolean().optional()
 })
 
+export const erpSaleUpdateSchema = erpSaleSchema
+
 export const erpExpenseSchema = z.object({
   expenseDate: optionalDate,
   category: z.enum(['RENT', 'ELECTRICITY', 'FUEL', 'MATERIALS', 'SALARIES', 'DELIVERY', 'ADVERTISING', 'OTHER']),

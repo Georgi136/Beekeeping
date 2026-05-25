@@ -4,6 +4,7 @@ import {
   createErpSale,
   createExpense,
   createWaxTransaction,
+  deleteErpSale,
   erpDashboard,
   erpMeta,
   erpReports,
@@ -13,12 +14,13 @@ import {
   listExpenses,
   listInventoryMovements,
   listWaxTransactions,
+  updateErpSale,
   updateErpProduct
 } from '../controllers/erpController'
 import { asyncHandler } from '../middleware/asyncHandler'
 import { requireRole } from '../middleware/auth'
 import { validateBody, validateQuery } from '../middleware/validate'
-import { erpExpenseSchema, erpProductSchema, erpReportQuerySchema, erpSaleSchema, erpWaxTransactionSchema } from '../validators/erp'
+import { erpExpenseSchema, erpProductSchema, erpReportQuerySchema, erpSaleSchema, erpSaleUpdateSchema, erpWaxTransactionSchema } from '../validators/erp'
 
 const router = Router()
 
@@ -33,6 +35,8 @@ router.put('/products/:id', requireRole(['ADMIN']), validateBody(erpProductSchem
 
 router.get('/sales', requireRole(['ADMIN', 'STAFF', 'ACCOUNTANT']), asyncHandler(listErpSales))
 router.post('/sales', requireRole(['ADMIN', 'STAFF']), validateBody(erpSaleSchema), asyncHandler(createErpSale))
+router.put('/sales/:id', requireRole(['ADMIN', 'STAFF']), validateBody(erpSaleUpdateSchema), asyncHandler(updateErpSale))
+router.delete('/sales/:id', requireRole(['ADMIN', 'STAFF']), asyncHandler(deleteErpSale))
 
 router.get('/movements', requireRole(['ADMIN', 'ACCOUNTANT']), asyncHandler(listInventoryMovements))
 

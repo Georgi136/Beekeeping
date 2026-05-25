@@ -288,6 +288,146 @@ export async function createErpSale(req: Request, res: Response) {
   res.status(201).json(decimalToNumber(sale))
 }
 
+export async function updateErpSale(req: Request, res: Response) {
+  const creatorId = userId(req)
+  const saleId = Number(req.params.id)
+  const oldSale = await prisma.erpSale.findUnique({ where: { id: saleId }, include: { product: true } })
+  if (!oldSale) throw new AppError(404, 'Продажбата не е намерена.')
+
+  const product = await prisma.erpProduct.findUnique({ where: { id: req.body.productId } })
+  if (!product) throw new AppError(404, 'Продуктът не е намерен.')
+
+  const quantity = qty(req.body.quantity)
+  const unitPrice = money(req.body.unitPriceEur ?? product.sellPriceEur)
+  const total = money(quantity.mul(unitPrice))
+  const costTotal = money(quantity.mul(product.costPriceEur))
+  const profit = money(total.sub(costTotal))
+  const allowNegative = role(req) === 'ADMIN' && Boolean(req.body.allowNegativeStock)
+
+  if (oldSale.productId === product.id) {
+    const stockDelta = oldSale.quantity.sub(quantity)
+    await assertStock(product.id, stockDelta, allowNegative)
+  } else {
+    await assertStock(product.id, quantity.neg(), allowNegative)
+  }
+
+  const sale = await prisma.$transaction(async (tx) => {
+    if (oldSale.productId === product.id) {
+      const stockDelta = oldSale.quantity.sub(quantity)
+      const soldDelta = quantity.sub(oldSale.quantity)
+      if (!stockDelta.eq(0)) {
+        await tx.erpProduct.update({
+          where: { id: product.id },
+          data: {
+            stockQuantity: { increment: stockDelta },
+            totalSoldQuantity: { increment: soldDelta }
+          }
+        })
+        await tx.erpInventoryMovement.create({
+          data: {
+            productId: product.id,
+            movementType: 'CORRECTION',
+            quantityChange: stockDelta,
+            referenceType: 'erp_sale',
+            referenceId: saleId,
+            notes: 'Корекция от редакция на продажба',
+            createdById: creatorId
+          }
+        })
+      }
+    } else {
+      await tx.erpProduct.update({
+        where: { id: oldSale.productId },
+        data: {
+          stockQuantity: { increment: oldSale.quantity },
+          totalSoldQuantity: { decrement: oldSale.quantity }
+        }
+      })
+      await tx.erpInventoryMovement.create({
+        data: {
+          productId: oldSale.productId,
+          movementType: 'RETURN',
+          quantityChange: oldSale.quantity,
+          referenceType: 'erp_sale',
+          referenceId: saleId,
+          notes: 'Връщане от смяна на продукт в продажба',
+          createdById: creatorId
+        }
+      })
+      await tx.erpProduct.update({
+        where: { id: product.id },
+        data: {
+          stockQuantity: { decrement: quantity },
+          totalSoldQuantity: { increment: quantity }
+        }
+      })
+      await tx.erpInventoryMovement.create({
+        data: {
+          productId: product.id,
+          movementType: 'SALE',
+          quantityChange: quantity.neg(),
+          referenceType: 'erp_sale',
+          referenceId: saleId,
+          notes: 'Продажба след редакция',
+          createdById: creatorId
+        }
+      })
+    }
+
+    return tx.erpSale.update({
+      where: { id: saleId },
+      data: {
+        saleDate: req.body.saleDate || oldSale.saleDate,
+        productId: product.id,
+        quantity,
+        unitPriceEur: unitPrice,
+        totalEur: total,
+        totalBgn: toBgn(total),
+        costTotalEur: costTotal,
+        profitEur: profit,
+        paymentMethod: req.body.paymentMethod,
+        notes: req.body.notes
+      },
+      include: { product: true, createdBy: { select: { name: true, email: true } } }
+    })
+  })
+
+  await audit(creatorId, 'edited sale', 'erp_sale', saleId, decimalToNumber(oldSale), decimalToNumber(sale))
+  res.json(decimalToNumber(sale))
+}
+
+export async function deleteErpSale(req: Request, res: Response) {
+  const creatorId = userId(req)
+  const saleId = Number(req.params.id)
+  const sale = await prisma.erpSale.findUnique({ where: { id: saleId }, include: { product: true } })
+  if (!sale) throw new AppError(404, 'Продажбата не е намерена.')
+
+  await prisma.$transaction(async (tx) => {
+    await tx.erpProduct.update({
+      where: { id: sale.productId },
+      data: {
+        stockQuantity: { increment: sale.quantity },
+        totalSoldQuantity: { decrement: sale.quantity }
+      }
+    })
+    await tx.erpInventoryMovement.create({
+      data: {
+        productId: sale.productId,
+        movementType: 'RETURN',
+        quantityChange: sale.quantity,
+        referenceType: 'erp_sale',
+        referenceId: sale.id,
+        notes: 'Връщане в склада от изтрита продажба',
+        createdById: creatorId
+      }
+    })
+    await tx.erpSale.delete({ where: { id: saleId } })
+  })
+
+  await audit(creatorId, 'deleted sale', 'erp_sale', saleId, decimalToNumber(sale), undefined)
+  res.status(204).send()
+}
+
 export async function listInventoryMovements(_req: Request, res: Response) {
   const movements = await prisma.erpInventoryMovement.findMany({
     include: { product: true, createdBy: { select: { name: true, email: true } } },
