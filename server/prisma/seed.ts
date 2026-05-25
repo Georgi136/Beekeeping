@@ -1,5 +1,20 @@
 import bcrypt from 'bcryptjs'
 import { PrismaClient, ProductStatus } from '@prisma/client'
+import { existsSync, readFileSync } from 'fs'
+import { resolve } from 'path'
+
+const envPath = resolve(process.cwd(), '.env')
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const separator = trimmed.indexOf('=')
+    if (separator === -1) continue
+    const key = trimmed.slice(0, separator).trim()
+    const value = trimmed.slice(separator + 1).trim().replace(/^"|"$/g, '')
+    if (!process.env[key]) process.env[key] = value
+  }
+}
 
 const prisma = new PrismaClient()
 
@@ -199,6 +214,77 @@ async function main() {
       ]
     }
   })
+
+  const erpProducts = [
+    {
+      name: 'Мед букет 1кг',
+      category: 'HONEY' as const,
+      unit: 'PCS' as const,
+      sellPriceEur: 6.5,
+      costPriceEur: 3.2,
+      stockQuantity: 40,
+      minStockQuantity: 8,
+      notes: 'Основен продукт за магазина'
+    },
+    {
+      name: 'Восъчни основи 1кг',
+      category: 'WAX_FOUNDATIONS' as const,
+      unit: 'KG' as const,
+      sellPriceEur: 15,
+      costPriceEur: 10,
+      stockQuantity: 25,
+      minStockQuantity: 5,
+      notes: 'Използва се и при обмен на восък'
+    },
+    {
+      name: 'Храна за пчели',
+      category: 'BEEKEEPING_EQUIPMENT' as const,
+      unit: 'PACKAGE' as const,
+      sellPriceEur: 9,
+      costPriceEur: 6.2,
+      stockQuantity: 30,
+      minStockQuantity: 6
+    },
+    {
+      name: 'Буркан 1кг',
+      category: 'PACKAGING' as const,
+      unit: 'PCS' as const,
+      sellPriceEur: 0.45,
+      costPriceEur: 0.28,
+      stockQuantity: 200,
+      minStockQuantity: 40
+    },
+    {
+      name: 'Пчеларски нож',
+      category: 'BEEKEEPING_EQUIPMENT' as const,
+      unit: 'PCS' as const,
+      sellPriceEur: 18,
+      costPriceEur: 11,
+      stockQuantity: 12,
+      minStockQuantity: 3
+    }
+  ]
+
+  const admin = await prisma.user.findUnique({ where: { email: adminEmail } })
+  for (const product of erpProducts) {
+    const exists = await prisma.erpProduct.findFirst({ where: { name: product.name } })
+    if (!exists) {
+      const saved = await prisma.erpProduct.create({ data: product })
+      if (admin && saved.stockQuantity.gt(0)) {
+        await prisma.erpInventoryMovement.create({
+          data: {
+            productId: saved.id,
+            movementType: 'DELIVERY',
+            quantityChange: saved.stockQuantity,
+            referenceType: 'erp_seed',
+            referenceId: saved.id,
+            notes: 'Начална наличност от seed',
+            createdById: admin.id
+          }
+        })
+      }
+    }
+  }
 }
 
 main()

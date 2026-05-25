@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import type { UserRole } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
 import { AppError } from '../errors/AppError'
@@ -6,7 +7,7 @@ import { AppError } from '../errors/AppError'
 interface TokenPayload {
   id: number
   email: string
-  role: 'ADMIN'
+  role: UserRole
 }
 
 export function signAdminToken(payload: TokenPayload) {
@@ -21,23 +22,45 @@ function readToken(req: Request) {
   return req.cookies?.admin_token
 }
 
-export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
+function readUser(req: Request) {
   const token = readToken(req)
   if (!token) {
-    next(new AppError(401, 'Необходимо е да влезете в админ панела.'))
-    return
+    throw new AppError(401, 'Необходимо е да влезете в админ панела.')
   }
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret) as TokenPayload
-    if (payload.role !== 'ADMIN') {
-      next(new AppError(403, 'Нямате права за тази операция.'))
-      return
-    }
-
-    req.user = payload
-    next()
+    return jwt.verify(token, env.jwtSecret) as TokenPayload
   } catch {
-    next(new AppError(401, 'Сесията е изтекла. Моля, влезте отново.'))
+    throw new AppError(401, 'Сесията е изтекла. Моля, влезте отново.')
   }
+}
+
+export function requireAuthenticated(req: Request, _res: Response, next: NextFunction) {
+  try {
+    req.user = readUser(req)
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export function requireRole(roles: UserRole[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const user = readUser(req)
+      if (!roles.includes(user.role)) {
+        next(new AppError(403, 'Нямате права за тази операция.'))
+        return
+      }
+
+      req.user = user
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  return requireRole(['ADMIN'])(req, res, next)
 }

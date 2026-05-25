@@ -17,6 +17,10 @@
     "install:all": "npm install && cd client && npm install && cd ../server && npm install"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "xlsx": "^0.18.5"
+  },
+  "dependencies": {
+    "all": "^0.0.0"
   }
 }

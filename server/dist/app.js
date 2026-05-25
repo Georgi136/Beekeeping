@@ -17,6 +17,7 @@ const admin_1 = __importDefault(require("./routes/admin"));
 const categories_1 = __importDefault(require("./routes/categories"));
 const promotions_1 = __importDefault(require("./routes/promotions"));
 const landingPages_1 = __importDefault(require("./routes/landingPages"));
+const erp_1 = __importDefault(require("./routes/erp"));
 const paths_1 = require("./paths");
 const env_1 = require("./config/env");
 const errorHandler_1 = require("./middleware/errorHandler");
@@ -53,6 +54,7 @@ app.use('/api/categories', categories_1.default);
 app.use('/api/promotions', promotions_1.default);
 app.use('/api/landing-pages', landingPages_1.default);
 app.use('/api/auth', auth_1.default);
+app.use('/api/admin/erp', erp_1.default);
 app.use('/api/admin', admin_1.default);
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', message: 'Server is running' });

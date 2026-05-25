@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.signAdminToken = signAdminToken;
+exports.requireAuthenticated = requireAuthenticated;
+exports.requireRole = requireRole;
 exports.requireAdmin = requireAdmin;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const env_1 = require("../config/env");
@@ -18,22 +20,43 @@ function readToken(req) {
     }
     return req.cookies?.admin_token;
 }
-function requireAdmin(req, _res, next) {
+function readUser(req) {
     const token = readToken(req);
     if (!token) {
-        next(new AppError_1.AppError(401, 'Необходимо е да влезете в админ панела.'));
-        return;
+        throw new AppError_1.AppError(401, 'Необходимо е да влезете в админ панела.');
     }
     try {
-        const payload = jsonwebtoken_1.default.verify(token, env_1.env.jwtSecret);
-        if (payload.role !== 'ADMIN') {
-            next(new AppError_1.AppError(403, 'Нямате права за тази операция.'));
-            return;
-        }
-        req.user = payload;
-        next();
+        return jsonwebtoken_1.default.verify(token, env_1.env.jwtSecret);
     }
     catch {
-        next(new AppError_1.AppError(401, 'Сесията е изтекла. Моля, влезте отново.'));
+        throw new AppError_1.AppError(401, 'Сесията е изтекла. Моля, влезте отново.');
     }
+}
+function requireAuthenticated(req, _res, next) {
+    try {
+        req.user = readUser(req);
+        next();
+    }
+    catch (err) {
+        next(err);
+    }
+}
+function requireRole(roles) {
+    return (req, _res, next) => {
+        try {
+            const user = readUser(req);
+            if (!roles.includes(user.role)) {
+                next(new AppError_1.AppError(403, 'Нямате права за тази операция.'));
+                return;
+            }
+            req.user = user;
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    };
+}
+function requireAdmin(req, res, next) {
+    return requireRole(['ADMIN'])(req, res, next);
 }
