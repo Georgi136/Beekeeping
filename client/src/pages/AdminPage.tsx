@@ -47,18 +47,43 @@ interface Dashboard {
   lowStockProducts: ErpProduct[]
   latestSales: ErpSale[]
   latestWaxTransactions: WaxTransaction[]
+  waxStockKg: number
+  waxInventoryValueEur?: number
 }
 
 interface WaxTransaction {
   id: number
+  transactionType?: 'BUY' | 'SWAP'
   transactionDate: string
-  customerName: string
+  customerName?: string | null
+  customerPhone?: string | null
   waxReceivedKg: number
+  waxPricePerKgEur: number
   waxValueEur: number
   foundationGivenKg: number
+  foundationPricePerKgEur: number
   foundationValueEur: number
+  foundationProductId?: number | null
+  foundationProduct?: ErpProduct | null
   extraPaymentEur: number
   balanceEur: number
+  notes?: string | null
+}
+
+interface WaxSummary {
+  defaultBuyPriceEur: number
+  waxStockKg: number
+  waxInventoryValueEur: number
+  totalWaxBoughtValueEur: number
+  totalFoundationGivenKg: number
+  totalFoundationGivenValueEur: number
+  totalExtraPaymentEur: number
+  balanceEur: number
+  transactionCount: number
+}
+
+interface WaxSettings {
+  defaultBuyPriceEur: number
 }
 
 interface Reports {
@@ -119,6 +144,30 @@ const emptyProduct = {
   notes: ''
 }
 
+const emptyDashboard: Dashboard = {
+  todayTurnoverEur: 0,
+  todayProfitEur: 0,
+  monthlyTurnoverEur: 0,
+  monthlyProfitEur: 0,
+  lowStockProducts: [],
+  latestSales: [],
+  latestWaxTransactions: [],
+  waxStockKg: 0,
+  waxInventoryValueEur: 0
+}
+
+const emptyWaxSummary: WaxSummary = {
+  defaultBuyPriceEur: 5,
+  waxStockKg: 0,
+  waxInventoryValueEur: 0,
+  totalWaxBoughtValueEur: 0,
+  totalFoundationGivenKg: 0,
+  totalFoundationGivenValueEur: 0,
+  totalExtraPaymentEur: 0,
+  balanceEur: 0,
+  transactionCount: 0
+}
+
 function today() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -148,9 +197,12 @@ export default function AdminPage() {
   const [sales, setSales] = useState<ErpSale[]>([])
   const [reports, setReports] = useState<Reports | null>(null)
   const [waxTransactions, setWaxTransactions] = useState<WaxTransaction[]>([])
+  const [waxSummary, setWaxSummary] = useState<WaxSummary>(emptyWaxSummary)
+  const [waxSettings, setWaxSettings] = useState<WaxSettings>({ defaultBuyPriceEur: 5 })
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [showProductEditor, setShowProductEditor] = useState(false)
   const [editingSaleId, setEditingSaleId] = useState<number | null>(null)
+  const [editingWaxId, setEditingWaxId] = useState<number | null>(null)
   const [salesView, setSalesView] = useState<SalesView>('quick')
   const [saleProductSearch, setSaleProductSearch] = useState('')
   const [reportTab, setReportTab] = useState<ReportTab>('monthly')
@@ -158,6 +210,7 @@ export default function AdminPage() {
   const [saleForm, setSaleForm] = useState({ saleDate: today(), productId: '', quantity: '1', unitPriceEur: '', paymentMethod: 'CASH', notes: '' })
   const [expenseForm, setExpenseForm] = useState({ expenseDate: today(), category: 'MATERIALS', amountEur: '', paymentMethod: 'CASH', supplier: '', notes: '' })
   const [waxForm, setWaxForm] = useState({
+    transactionType: 'BUY' as 'BUY' | 'SWAP',
     transactionDate: today(),
     customerName: '',
     customerPhone: '',
@@ -169,6 +222,7 @@ export default function AdminPage() {
     foundationProductId: '',
     notes: ''
   })
+  const [waxSettingsForm, setWaxSettingsForm] = useState({ defaultBuyPriceEur: '5' })
   const [reportRange, setReportRange] = useState({ from: today().slice(0, 8) + '01', to: today() })
 
   const authHeaders = useMemo(() => ({
@@ -196,18 +250,37 @@ export default function AdminPage() {
   }
 
   async function loadData() {
-    const [dashboardData, productData, saleData, reportData, waxData] = await Promise.all([
+    const results = await Promise.allSettled([
       adminFetch('/api/admin/erp/dashboard'),
       adminFetch('/api/admin/erp/products'),
       adminFetch('/api/admin/erp/sales'),
       adminFetch(`/api/admin/erp/reports?from=${reportRange.from}&to=${reportRange.to}`),
-      adminFetch('/api/admin/erp/wax-transactions')
+      adminFetch('/api/admin/erp/wax-transactions'),
+      adminFetch('/api/admin/erp/wax-summary'),
+      adminFetch('/api/admin/erp/wax-settings')
     ])
-    setDashboard(dashboardData)
-    setProducts(productData)
-    setSales(saleData)
-    setReports(reportData)
-    setWaxTransactions(waxData)
+
+    const [dashboardResult, productResult, saleResult, reportResult, waxResult, waxSummaryResult, waxSettingsResult] = results
+
+    setDashboard(dashboardResult.status === 'fulfilled' ? { ...emptyDashboard, ...dashboardResult.value } : emptyDashboard)
+    if (productResult.status === 'fulfilled') setProducts(Array.isArray(productResult.value) ? productResult.value : [])
+    if (saleResult.status === 'fulfilled') setSales(Array.isArray(saleResult.value) ? saleResult.value : [])
+    if (reportResult.status === 'fulfilled') setReports(reportResult.value)
+    if (waxResult.status === 'fulfilled') setWaxTransactions(Array.isArray(waxResult.value) ? waxResult.value : [])
+    if (waxSummaryResult.status === 'fulfilled') setWaxSummary({ ...emptyWaxSummary, ...waxSummaryResult.value })
+    if (waxSettingsResult.status === 'fulfilled') {
+      const settings = { defaultBuyPriceEur: Number(waxSettingsResult.value.defaultBuyPriceEur || 5) }
+      setWaxSettings(settings)
+      setWaxSettingsForm({ defaultBuyPriceEur: String(settings.defaultBuyPriceEur) })
+      if (!editingWaxId) {
+        setWaxForm((current) => ({ ...current, waxPricePerKgEur: String(settings.defaultBuyPriceEur) }))
+      }
+    }
+
+    const failed = results.find((result) => result.status === 'rejected')
+    if (failed?.status === 'rejected') {
+      setStatus(failed.reason instanceof Error ? failed.reason.message : 'ERP данните не се заредиха напълно.')
+    }
   }
 
   useEffect(() => {
@@ -389,23 +462,101 @@ export default function AdminPage() {
     setStatus('Разходът е записан.')
   }
 
+  async function submitWaxSettings(e: React.FormEvent) {
+    e.preventDefault()
+    await adminFetch('/api/admin/erp/wax-settings', {
+      method: 'PUT',
+      body: JSON.stringify({ defaultBuyPriceEur: Number(waxSettingsForm.defaultBuyPriceEur) })
+    })
+    await loadData()
+    setStatus('Настройките за восък са запазени.')
+  }
+
+  function resetWaxForm(defaultPrice = waxSettings.defaultBuyPriceEur) {
+    setEditingWaxId(null)
+    setWaxForm({
+      transactionType: 'BUY',
+      transactionDate: today(),
+      customerName: '',
+      customerPhone: '',
+      waxReceivedKg: '0',
+      waxPricePerKgEur: String(defaultPrice),
+      foundationGivenKg: '0',
+      foundationPricePerKgEur: '0',
+      extraPaymentEur: '0',
+      foundationProductId: '',
+      notes: ''
+    })
+  }
+
+  function setWaxTransactionType(transactionType: 'BUY' | 'SWAP') {
+    setWaxForm((current) => ({
+      ...current,
+      transactionType,
+      foundationGivenKg: transactionType === 'BUY' ? '0' : current.foundationGivenKg,
+      foundationPricePerKgEur: transactionType === 'BUY' ? '0' : current.foundationPricePerKgEur,
+      foundationProductId: transactionType === 'BUY' ? '' : current.foundationProductId,
+      extraPaymentEur: transactionType === 'BUY' ? '0' : current.extraPaymentEur
+    }))
+  }
+
   async function submitWax(e: React.FormEvent) {
     e.preventDefault()
-    await adminFetch('/api/admin/erp/wax-transactions', {
-      method: 'POST',
+    const method = editingWaxId ? 'PATCH' : 'POST'
+    const path = editingWaxId ? `/api/admin/erp/wax-transactions/${editingWaxId}` : '/api/admin/erp/wax-transactions'
+    await adminFetch(path, {
+      method,
       body: JSON.stringify({
         ...waxForm,
         waxReceivedKg: Number(waxForm.waxReceivedKg),
         waxPricePerKgEur: Number(waxForm.waxPricePerKgEur),
-        foundationGivenKg: Number(waxForm.foundationGivenKg),
-        foundationPricePerKgEur: Number(waxForm.foundationPricePerKgEur),
-        extraPaymentEur: Number(waxForm.extraPaymentEur),
-        foundationProductId: waxForm.foundationProductId ? Number(waxForm.foundationProductId) : null
+        foundationGivenKg: waxForm.transactionType === 'SWAP' ? Number(waxForm.foundationGivenKg) : 0,
+        foundationPricePerKgEur: waxForm.transactionType === 'SWAP' ? Number(waxForm.foundationPricePerKgEur) : 0,
+        extraPaymentEur: waxForm.transactionType === 'SWAP' ? Number(waxForm.extraPaymentEur) : 0,
+        foundationProductId: waxForm.transactionType === 'SWAP' && waxForm.foundationProductId ? Number(waxForm.foundationProductId) : null
       })
     })
-    setWaxForm({ ...waxForm, customerName: '', customerPhone: '', waxReceivedKg: '0', foundationGivenKg: '0', extraPaymentEur: '0', notes: '' })
+    resetWaxForm()
     await loadData()
-    setStatus('Восъчната сделка е записана.')
+    setStatus(editingWaxId ? 'Восъчната сделка е редактирана.' : 'Восъчната сделка е записана.')
+  }
+
+  function editWax(transaction: WaxTransaction) {
+    setEditingWaxId(transaction.id)
+    setTab('wax')
+    const transactionType = transaction.transactionType || (Number(transaction.foundationGivenKg || 0) > 0 ? 'SWAP' : 'BUY')
+    setWaxForm({
+      transactionType,
+      transactionDate: transaction.transactionDate.slice(0, 10),
+      customerName: transaction.customerName || '',
+      customerPhone: transaction.customerPhone || '',
+      waxReceivedKg: String(transaction.waxReceivedKg),
+      waxPricePerKgEur: String(transaction.waxPricePerKgEur),
+      foundationGivenKg: String(transaction.foundationGivenKg),
+      foundationPricePerKgEur: String(transaction.foundationPricePerKgEur),
+      extraPaymentEur: String(transaction.extraPaymentEur),
+      foundationProductId: transaction.foundationProductId ? String(transaction.foundationProductId) : '',
+      notes: transaction.notes || ''
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function removeWax(transaction: WaxTransaction) {
+    const confirmed = window.confirm('Да изтрия ли восъчната сделка? Наличността ще бъде коригирана.')
+    if (!confirmed) return
+    setLoading(true)
+    try {
+      await adminFetch(`/api/admin/erp/wax-transactions/${transaction.id}`, { method: 'DELETE' })
+      if (editingWaxId === transaction.id) {
+        resetWaxForm()
+      }
+      await loadData()
+      setStatus('Восъчната сделка е изтрита.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Грешка при изтриване.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const selectedSaleProduct = products.find((product) => String(product.id) === saleForm.productId)
@@ -424,9 +575,23 @@ export default function AdminPage() {
     sellValue: totals.sellValue + Number(product.inventorySellValueEur || 0),
     low: totals.low + (product.stockStatus === 'LOW' ? 1 : 0)
   }), { stockValue: 0, sellValue: 0, low: 0 })
+  const foundationProducts = products.filter((product) => product.category === 'WAX_FOUNDATIONS')
+  const selectedFoundationProduct = foundationProducts.find((product) => String(product.id) === waxForm.foundationProductId)
+  const isWaxSwap = waxForm.transactionType === 'SWAP'
   const waxValue = Number(waxForm.waxReceivedKg || 0) * Number(waxForm.waxPricePerKgEur || 0)
-  const foundationValue = Number(waxForm.foundationGivenKg || 0) * Number(waxForm.foundationPricePerKgEur || 0)
-  const waxBalance = waxValue - foundationValue - Number(waxForm.extraPaymentEur || 0)
+  const foundationValue = isWaxSwap ? Number(waxForm.foundationGivenKg || 0) * Number(waxForm.foundationPricePerKgEur || 0) : 0
+  const waxBalance = waxValue + (isWaxSwap ? Number(waxForm.extraPaymentEur || 0) : 0) - foundationValue
+  const waxBalanceLabel = waxForm.transactionType === 'BUY'
+    ? `За плащане ${eur(waxValue)}`
+    : waxBalance > 0
+      ? `Дължите на клиента ${eur(waxBalance)}`
+      : waxBalance < 0
+        ? `Клиентът доплаща ${eur(Math.abs(waxBalance))}`
+        : 'Сделката е изравнена'
+  const waxStockKg = Number(dashboard?.waxStockKg || 0)
+  const dashboardLowStockProducts = dashboard?.lowStockProducts || []
+  const dashboardLatestSales = dashboard?.latestSales || []
+  const dashboardLatestWaxTransactions = dashboard?.latestWaxTransactions || []
 
   if (!isAuthenticated) {
     return (
@@ -480,14 +645,15 @@ export default function AdminPage() {
               <div><span>Днес печалба</span><strong>{eur(dashboard.todayProfitEur)}</strong><small>{bgn(dashboard.todayProfitEur)}</small></div>
               <div><span>Месец оборот</span><strong>{eur(dashboard.monthlyTurnoverEur)}</strong><small>{bgn(dashboard.monthlyTurnoverEur)}</small></div>
               <div><span>Месец печалба</span><strong>{eur(dashboard.monthlyProfitEur)}</strong><small>{bgn(dashboard.monthlyProfitEur)}</small></div>
+              <div><span>Наличен восък</span><strong>{waxStockKg.toFixed(3)} кг</strong><small>{waxStockKg.toFixed(3)} кг</small></div>
             </section>
             <section className="erp-columns">
               <Panel title="Ниска наличност">
-                {dashboard.lowStockProducts.map((product) => <Row key={product.id} title={product.name} meta={`${product.stockQuantity} ${unitLabels[product.unit]} минимум ${product.minStockQuantity}`} />)}
+                {dashboardLowStockProducts.map((product) => <Row key={product.id} title={product.name} meta={`${product.stockQuantity} ${unitLabels[product.unit]} минимум ${product.minStockQuantity}`} />)}
               </Panel>
               <Panel title="Последни продажби">
                 <button className="inline-action" onClick={openAllSales}>Виж всички продажби</button>
-                {dashboard.latestSales.map((sale) => (
+                {dashboardLatestSales.map((sale) => (
                   <div className="row-with-action" key={sale.id}>
                     <Row title={sale.product.name} meta={`${sale.quantity} x ${eur(sale.unitPriceEur)} = ${eur(sale.totalEur)}`} />
                     <div className="mini-actions">
@@ -498,7 +664,7 @@ export default function AdminPage() {
                 ))}
               </Panel>
               <Panel title="Последни сделки с восък">
-                {dashboard.latestWaxTransactions.map((item) => <Row key={item.id} title={item.customerName} meta={`Баланс ${eur(item.balanceEur)} | восък ${item.waxReceivedKg} кг`} />)}
+                {dashboardLatestWaxTransactions.map((item) => <Row key={item.id} title={item.customerName || `#${item.id}`} meta={`Баланс ${eur(item.balanceEur)} | восък ${item.waxReceivedKg} кг`} />)}
               </Panel>
             </section>
           </>
@@ -512,19 +678,21 @@ export default function AdminPage() {
                   <h2>{editingSaleId ? 'Редакция на продажба' : 'Бърза продажба'}</h2>
                   <p>{selectedSaleProduct ? selectedSaleProduct.name : 'Изберете продукт и въведете количество'}</p>
                 </div>
-                <input type="date" value={saleForm.saleDate} onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })} />
+                <label>Дата<input type="date" value={saleForm.saleDate} onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })} /></label>
               </div>
 
               <div className="quick-search">
-                <input placeholder="Търси продукт или ИД" value={saleProductSearch} onChange={(e) => setSaleProductSearch(e.target.value)} />
-                <select value={saleForm.productId} onChange={(e) => {
-                  const product = products.find((item) => String(item.id) === e.target.value)
-                  if (product) selectSaleProduct(product)
-                  else setSaleForm({ ...saleForm, productId: '', unitPriceEur: '' })
-                }} required>
-                  <option value="">Всички продукти</option>
-                  {products.filter((product) => product.active).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-                </select>
+                <label>Търсене<input placeholder="Търси продукт или ИД" value={saleProductSearch} onChange={(e) => setSaleProductSearch(e.target.value)} /></label>
+                <label>Продукт
+                  <select value={saleForm.productId} onChange={(e) => {
+                    const product = products.find((item) => String(item.id) === e.target.value)
+                    if (product) selectSaleProduct(product)
+                    else setSaleForm({ ...saleForm, productId: '', unitPriceEur: '' })
+                  }} required>
+                    <option value="">Всички продукти</option>
+                    {products.filter((product) => product.active).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+                  </select>
+                </label>
               </div>
 
               <div className="quick-products">
@@ -541,13 +709,16 @@ export default function AdminPage() {
                 <label>Цена EUR<input inputMode="decimal" type="number" step="0.01" min="0" value={saleForm.unitPriceEur} onChange={(e) => setSaleForm({ ...saleForm, unitPriceEur: e.target.value })} /></label>
               </div>
 
-              <div className="payment-pills">
-                {Object.entries(paymentLabels).map(([key, label]) => (
-                  <button type="button" key={key} className={saleForm.paymentMethod === key ? 'active' : ''} onClick={() => setSaleForm({ ...saleForm, paymentMethod: key })}>{label}</button>
-                ))}
+              <div className="field-group">
+                <span className="field-title">Плащане</span>
+                <div className="payment-pills">
+                  {Object.entries(paymentLabels).map(([key, label]) => (
+                    <button type="button" key={key} className={saleForm.paymentMethod === key ? 'active' : ''} onClick={() => setSaleForm({ ...saleForm, paymentMethod: key })}>{label}</button>
+                  ))}
+                </div>
               </div>
 
-              <textarea className="sale-note" placeholder="Бележка" value={saleForm.notes} onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })} />
+              <label>Бележка<textarea className="sale-note" placeholder="Бележка" value={saleForm.notes} onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })} /></label>
               <div className="sale-total-bar">
                 <span>Общо</span>
                 <strong>{eur(Number(saleForm.quantity || 0) * Number(saleForm.unitPriceEur || selectedSaleProduct?.sellPriceEur || 0))}</strong>
@@ -622,16 +793,20 @@ export default function AdminPage() {
           <section className="storage-layout">
             <section className="storage-main">
               <div className="storage-toolbar">
-                <input placeholder="Търсене по име, ИД или бележка" value={storageSearch} onChange={(e) => setStorageSearch(e.target.value)} />
-                <select value={storageCategory} onChange={(e) => setStorageCategory(e.target.value)}>
-                  <option value="ALL">Всички категории</option>
-                  {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
-                <select value={storageStatus} onChange={(e) => setStorageStatus(e.target.value)}>
-                  <option value="ALL">Всички</option>
-                  <option value="LOW">Ниска наличност</option>
-                  <option value="ACTIVE">Активни</option>
-                </select>
+                <label>Търсене<input placeholder="Търсене по име, ИД или бележка" value={storageSearch} onChange={(e) => setStorageSearch(e.target.value)} /></label>
+                <label>Категория
+                  <select value={storageCategory} onChange={(e) => setStorageCategory(e.target.value)}>
+                    <option value="ALL">Всички категории</option>
+                    {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                  </select>
+                </label>
+                <label>Статус
+                  <select value={storageStatus} onChange={(e) => setStorageStatus(e.target.value)}>
+                    <option value="ALL">Всички</option>
+                    <option value="LOW">Ниска наличност</option>
+                    <option value="ACTIVE">Активни</option>
+                  </select>
+                </label>
                 <button className="erp-btn primary" onClick={openNewProductEditor}>Нов продукт</button>
               </div>
               {showProductEditor && (
@@ -641,21 +816,25 @@ export default function AdminPage() {
                     <button type="button" className="mini-btn" onClick={() => { setShowProductEditor(false); setEditingProductId(null); setProductForm(emptyProduct) }}>Затвори</button>
                   </div>
                   <div className="editor-grid">
-                    <input placeholder="ИД / код от склада" value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })} />
-                    <input placeholder="Име" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required />
-                    <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
-                      {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                    </select>
-                    <select value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}>
-                      {Object.entries(unitLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                    </select>
-                    <input type="number" step="0.01" min="0" placeholder="Продажна EUR" value={productForm.sellPriceEur} onChange={(e) => setProductForm({ ...productForm, sellPriceEur: e.target.value })} required />
-                    <input type="number" step="0.01" min="0" placeholder="Доставна EUR" value={productForm.costPriceEur} onChange={(e) => setProductForm({ ...productForm, costPriceEur: e.target.value })} required />
-                    <input type="number" step="0.001" min="0" placeholder="Наличност" value={productForm.stockQuantity} onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })} />
-                    <input type="number" step="0.001" min="0" placeholder="Минимум" value={productForm.minStockQuantity} onChange={(e) => setProductForm({ ...productForm, minStockQuantity: e.target.value })} />
-                    <input type="number" step="0.001" min="0" placeholder="Общо продадени" value={productForm.totalSoldQuantity} onChange={(e) => setProductForm({ ...productForm, totalSoldQuantity: e.target.value })} />
+                    <label>ИД / код<input placeholder="ИД / код от склада" value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })} /></label>
+                    <label>Име<input placeholder="Име" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required /></label>
+                    <label>Категория
+                      <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
+                        {Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label>Мерна единица
+                      <select value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}>
+                        {Object.entries(unitLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label>Продажна цена EUR<input type="number" step="0.01" min="0" placeholder="Продажна EUR" value={productForm.sellPriceEur} onChange={(e) => setProductForm({ ...productForm, sellPriceEur: e.target.value })} required /></label>
+                    <label>Доставна цена EUR<input type="number" step="0.01" min="0" placeholder="Доставна EUR" value={productForm.costPriceEur} onChange={(e) => setProductForm({ ...productForm, costPriceEur: e.target.value })} required /></label>
+                    <label>Наличност<input type="number" step="0.001" min="0" placeholder="Наличност" value={productForm.stockQuantity} onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })} /></label>
+                    <label>Минимум<input type="number" step="0.001" min="0" placeholder="Минимум" value={productForm.minStockQuantity} onChange={(e) => setProductForm({ ...productForm, minStockQuantity: e.target.value })} /></label>
+                    <label>Общо продадени<input type="number" step="0.001" min="0" placeholder="Общо продадени" value={productForm.totalSoldQuantity} onChange={(e) => setProductForm({ ...productForm, totalSoldQuantity: e.target.value })} /></label>
                     <label className="check"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })} /> Активен</label>
-                    <textarea placeholder="Бележки" value={productForm.notes} onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })} />
+                    <label className="wide-field">Бележки<textarea placeholder="Бележки" value={productForm.notes} onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })} /></label>
                     <div className="actions">
                       <button className="erp-btn primary" disabled={loading}>Запази</button>
                       {editingProductId && <button type="button" className="erp-btn ghost" onClick={() => { setEditingProductId(null); setProductForm(emptyProduct); setShowProductEditor(false) }}>Отказ</button>}
@@ -709,8 +888,8 @@ export default function AdminPage() {
         {tab === 'reports' && reports && (
           <section className="report-stack">
             <div className="filters">
-              <input type="date" value={reportRange.from} onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })} />
-              <input type="date" value={reportRange.to} onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })} />
+              <label>От дата<input type="date" value={reportRange.from} onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })} /></label>
+              <label>До дата<input type="date" value={reportRange.to} onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })} /></label>
               <a className="erp-btn primary" href={apiUrl(`/api/admin/erp/reports.csv?from=${reportRange.from}&to=${reportRange.to}`)}>CSV export</a>
             </div>
             <section className="metric-grid">
@@ -814,16 +993,20 @@ export default function AdminPage() {
           <section className="erp-grid">
             <form className="erp-card" onSubmit={submitExpense}>
               <h2>Нов разход</h2>
-              <input type="date" value={expenseForm.expenseDate} onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })} />
-              <select value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}>
-                {Object.entries(expenseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-              <input type="number" step="0.01" min="0" placeholder="Сума EUR" value={expenseForm.amountEur} onChange={(e) => setExpenseForm({ ...expenseForm, amountEur: e.target.value })} required />
-              <select value={expenseForm.paymentMethod} onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}>
-                {Object.entries(paymentLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-              <input placeholder="Доставчик" value={expenseForm.supplier} onChange={(e) => setExpenseForm({ ...expenseForm, supplier: e.target.value })} />
-              <textarea placeholder="Бележка" value={expenseForm.notes} onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })} />
+              <label>Дата<input type="date" value={expenseForm.expenseDate} onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })} /></label>
+              <label>Категория
+                <select value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}>
+                  {Object.entries(expenseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </select>
+              </label>
+              <label>Сума EUR<input type="number" step="0.01" min="0" placeholder="Сума EUR" value={expenseForm.amountEur} onChange={(e) => setExpenseForm({ ...expenseForm, amountEur: e.target.value })} required /></label>
+              <label>Плащане
+                <select value={expenseForm.paymentMethod} onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}>
+                  {Object.entries(paymentLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </select>
+              </label>
+              <label>Доставчик<input placeholder="Доставчик" value={expenseForm.supplier} onChange={(e) => setExpenseForm({ ...expenseForm, supplier: e.target.value })} /></label>
+              <label>Бележка<textarea placeholder="Бележка" value={expenseForm.notes} onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })} /></label>
               <button className="erp-btn primary">Запази разход</button>
             </form>
             <Panel title="Справка разходи">
@@ -833,32 +1016,82 @@ export default function AdminPage() {
         )}
 
         {tab === 'wax' && (
-          <section className="erp-grid">
-            <form className="erp-card" onSubmit={submitWax}>
-              <h2>Обмен / изкупуване на восък</h2>
-              <input type="date" value={waxForm.transactionDate} onChange={(e) => setWaxForm({ ...waxForm, transactionDate: e.target.value })} />
-              <input placeholder="Име на клиент" value={waxForm.customerName} onChange={(e) => setWaxForm({ ...waxForm, customerName: e.target.value })} required />
-              <input placeholder="Телефон" value={waxForm.customerPhone} onChange={(e) => setWaxForm({ ...waxForm, customerPhone: e.target.value })} />
-              <div className="two">
-                <input type="number" step="0.001" min="0" placeholder="Приет восък кг" value={waxForm.waxReceivedKg} onChange={(e) => setWaxForm({ ...waxForm, waxReceivedKg: e.target.value })} />
-                <input type="number" step="0.01" min="0" placeholder="Цена восък EUR/кг" value={waxForm.waxPricePerKgEur} onChange={(e) => setWaxForm({ ...waxForm, waxPricePerKgEur: e.target.value })} />
+          <section className="wax-page">
+            <section className="metric-grid compact">
+              <div><span>Наличен восък</span><strong>{Number(waxSummary.waxStockKg || 0).toFixed(3)} кг</strong><small>текущ склад</small></div>
+              <div><span>Стойност във восък</span><strong>{eur(waxSummary.waxInventoryValueEur)}</strong><small>по {eur(waxSettings.defaultBuyPriceEur)} / кг</small></div>
+              <div><span>Дадени основи</span><strong>{Number(waxSummary.totalFoundationGivenKg || 0).toFixed(3)} кг</strong><small>{eur(waxSummary.totalFoundationGivenValueEur)}</small></div>
+              <div><span>Баланс сделки</span><strong>{eur(waxSummary.balanceEur)}</strong><small>{waxSummary.transactionCount} сделки</small></div>
+            </section>
+
+            <section className="erp-grid">
+              <div className="wax-form-stack">
+                <form className="erp-card" onSubmit={submitWaxSettings}>
+                  <h2>Настройки восък</h2>
+                  <label>Цена изкупуване EUR/кг<input type="number" step="0.01" min="0" value={waxSettingsForm.defaultBuyPriceEur} onChange={(e) => setWaxSettingsForm({ defaultBuyPriceEur: e.target.value })} /></label>
+                  <button className="erp-btn primary">Запази цена</button>
+                </form>
+
+                <form className="erp-card" onSubmit={submitWax}>
+                  <h2>{editingWaxId ? 'Редакция на восъчна сделка' : 'Нова восъчна сделка'}</h2>
+                  <div className="mode-switch">
+                    <button type="button" className={waxForm.transactionType === 'BUY' ? 'active' : ''} onClick={() => setWaxTransactionType('BUY')}>Купувам восък</button>
+                    <button type="button" className={waxForm.transactionType === 'SWAP' ? 'active' : ''} onClick={() => setWaxTransactionType('SWAP')}>Смяна основи за восък</button>
+                  </div>
+                  <label>Дата<input type="date" value={waxForm.transactionDate} onChange={(e) => setWaxForm({ ...waxForm, transactionDate: e.target.value })} /></label>
+                  <label>Име на клиент<input placeholder="Име на клиент" value={waxForm.customerName} onChange={(e) => setWaxForm({ ...waxForm, customerName: e.target.value })} required /></label>
+                  <label>Телефон<input placeholder="Телефон" value={waxForm.customerPhone} onChange={(e) => setWaxForm({ ...waxForm, customerPhone: e.target.value })} /></label>
+                  <div className="two">
+                    <label>Приет восък кг<input type="number" step="0.001" min="0" placeholder="Приет восък кг" value={waxForm.waxReceivedKg} onChange={(e) => setWaxForm({ ...waxForm, waxReceivedKg: e.target.value })} /></label>
+                    <label>Цена восък EUR/кг<input type="number" step="0.01" min="0" placeholder="Цена восък EUR/кг" value={waxForm.waxPricePerKgEur} onChange={(e) => setWaxForm({ ...waxForm, waxPricePerKgEur: e.target.value })} /></label>
+                  </div>
+
+                  {isWaxSwap && (
+                    <>
+                      <label>Тип основи от склада
+                        <select value={waxForm.foundationProductId} onChange={(e) => {
+                          const product = foundationProducts.find((item) => String(item.id) === e.target.value)
+                          setWaxForm({ ...waxForm, foundationProductId: e.target.value, foundationPricePerKgEur: product ? String(product.sellPriceEur) : waxForm.foundationPricePerKgEur })
+                        }} required>
+                          <option value="">Избери основи</option>
+                          {foundationProducts.map((product) => <option key={product.id} value={product.id}>{product.name} | {product.stockQuantity} {unitLabels[product.unit]} | {eur(product.sellPriceEur)}</option>)}
+                        </select>
+                      </label>
+                      <div className="two">
+                        <label>Дадени основи кг<input type="number" step="0.001" min="0" placeholder="Дадени основи кг" value={waxForm.foundationGivenKg} onChange={(e) => setWaxForm({ ...waxForm, foundationGivenKg: e.target.value })} /></label>
+                        <label>Цена основи EUR/кг<input type="number" step="0.01" min="0" placeholder="Цена основи EUR/кг" value={waxForm.foundationPricePerKgEur} onChange={(e) => setWaxForm({ ...waxForm, foundationPricePerKgEur: e.target.value })} /></label>
+                      </div>
+                      <label>Доплатено от клиента EUR<input type="number" step="0.01" min="0" placeholder="Доплатено от клиента EUR" value={waxForm.extraPaymentEur} onChange={(e) => setWaxForm({ ...waxForm, extraPaymentEur: e.target.value })} /></label>
+                      {selectedFoundationProduct && <div className="storage-hint">Ще се приспадне от склада: {selectedFoundationProduct.name}</div>}
+                    </>
+                  )}
+
+                  <label>Бележка<textarea placeholder="Бележка" value={waxForm.notes} onChange={(e) => setWaxForm({ ...waxForm, notes: e.target.value })} /></label>
+                  <div className="form-total">
+                    Стойност восък {eur(waxValue)} | Основи {eur(foundationValue)} | {waxBalanceLabel}
+                  </div>
+                  <div className="actions">
+                    <button className="erp-btn primary">{editingWaxId ? 'Запази промени' : 'Запази сделка'}</button>
+                    {editingWaxId && <button type="button" className="erp-btn ghost" onClick={() => resetWaxForm()}>Отказ</button>}
+                  </div>
+                </form>
               </div>
-              <select value={waxForm.foundationProductId} onChange={(e) => setWaxForm({ ...waxForm, foundationProductId: e.target.value })}>
-                <option value="">Восъчни основи от склада</option>
-                {products.filter((product) => product.category === 'WAX_FOUNDATIONS').map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-              </select>
-              <div className="two">
-                <input type="number" step="0.001" min="0" placeholder="Дадени основи кг" value={waxForm.foundationGivenKg} onChange={(e) => setWaxForm({ ...waxForm, foundationGivenKg: e.target.value })} />
-                <input type="number" step="0.01" min="0" placeholder="Цена основи EUR/кг" value={waxForm.foundationPricePerKgEur} onChange={(e) => setWaxForm({ ...waxForm, foundationPricePerKgEur: e.target.value })} />
-              </div>
-              <input type="number" step="0.01" min="0" placeholder="Доплащане EUR" value={waxForm.extraPaymentEur} onChange={(e) => setWaxForm({ ...waxForm, extraPaymentEur: e.target.value })} />
-              <textarea placeholder="Бележка" value={waxForm.notes} onChange={(e) => setWaxForm({ ...waxForm, notes: e.target.value })} />
-              <div className="form-total">Стойност восък {eur(waxValue)} | Основи {eur(foundationValue)} | Баланс {eur(waxBalance)}</div>
-              <button className="erp-btn primary">Запази сделка</button>
-            </form>
-            <Panel title="Последни сделки">
-              {waxTransactions.map((item) => <Row key={item.id} title={item.customerName} meta={`${new Date(item.transactionDate).toLocaleDateString('bg-BG')} | баланс ${eur(item.balanceEur)} | восък ${item.waxReceivedKg} кг`} />)}
-            </Panel>
+
+              <Panel title="Восъчни сделки">
+                {waxTransactions.map((item) => (
+                  <div key={item.id} className="row-with-action">
+                    <Row
+                      title={`${item.transactionType === 'SWAP' ? 'Смяна' : 'Покупка'} | ${item.customerName || `#${item.id}`} | ${new Date(item.transactionDate).toLocaleDateString('bg-BG')}`}
+                      meta={`восък ${item.waxReceivedKg} кг | основи ${item.foundationGivenKg} кг | баланс ${eur(item.balanceEur)}`}
+                    />
+                    <div className="mini-actions">
+                      <button type="button" className="mini-btn" onClick={() => editWax(item)}>Редакция</button>
+                      <button type="button" className="mini-btn danger" onClick={() => removeWax(item)}>Изтрий</button>
+                    </div>
+                  </div>
+                ))}
+              </Panel>
+            </section>
           </section>
         )}
       </div>
@@ -974,13 +1207,17 @@ const erpStyles = `
     color: #687366;
   }
 
-  .erp-tabs,
-  .actions,
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+	  .erp-tabs,
+	  .actions,
+	  .filters {
+	    display: flex;
+	    flex-wrap: wrap;
+	    gap: 8px;
+	  }
+
+	  .filters {
+	    align-items: end;
+	  }
 
   .erp-tabs {
     margin: 0 0 14px;
@@ -1049,12 +1286,18 @@ const erpStyles = `
     gap: 12px;
   }
 
-  .erp-grid {
-    display: grid;
-    grid-template-columns: minmax(320px, 410px) 1fr;
-    gap: 14px;
-    align-items: start;
-  }
+	  .erp-grid {
+	    display: grid;
+	    grid-template-columns: minmax(320px, 410px) 1fr;
+	    gap: 14px;
+	    align-items: start;
+	  }
+
+	  .wax-page,
+	  .wax-form-stack {
+	    display: grid;
+	    gap: 14px;
+	  }
 
   .sales-layout {
     display: grid;
@@ -1129,11 +1372,21 @@ const erpStyles = `
     font-size: 0.86rem;
   }
 
-  .payment-pills {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-  }
+	  .payment-pills {
+	    display: grid;
+	    grid-template-columns: repeat(4, minmax(0, 1fr));
+	    gap: 8px;
+	  }
+
+	  .field-group {
+	    display: grid;
+	    gap: 6px;
+	  }
+
+	  .field-title {
+	    color: #344238;
+	    font-weight: 700;
+	  }
 
   .payment-pills button {
     min-height: 44px;
@@ -1146,11 +1399,34 @@ const erpStyles = `
     cursor: pointer;
   }
 
-  .payment-pills button.active {
-    background: #225c32;
-    border-color: #225c32;
-    color: #fff;
-  }
+	  .payment-pills button.active {
+	    background: #225c32;
+	    border-color: #225c32;
+	    color: #fff;
+	  }
+
+	  .mode-switch {
+	    display: grid;
+	    grid-template-columns: 1fr 1fr;
+	    gap: 8px;
+	  }
+
+	  .mode-switch button {
+	    min-height: 44px;
+	    border: 1px solid #cfd9ca;
+	    border-radius: 6px;
+	    background: #fff;
+	    color: #1f3822;
+	    font: inherit;
+	    font-weight: 800;
+	    cursor: pointer;
+	  }
+
+	  .mode-switch button.active {
+	    background: #225c32;
+	    border-color: #225c32;
+	    color: #fff;
+	  }
 
   .sale-note {
     min-height: 58px;
@@ -1216,17 +1492,18 @@ const erpStyles = `
     font-weight: 700;
   }
 
-  .storage-toolbar {
-    display: grid;
-    grid-template-columns: minmax(260px, 1fr) 190px 170px 140px;
-    gap: 8px;
-    padding: 12px;
+	  .storage-toolbar {
+	    display: grid;
+	    grid-template-columns: minmax(260px, 1fr) 190px 170px 140px;
+	    gap: 8px;
+	    padding: 12px;
     background: #f8faf6;
-    border-bottom: 1px solid #dfe5dc;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
+	    border-bottom: 1px solid #dfe5dc;
+	    position: sticky;
+	    top: 0;
+	    z-index: 2;
+	    align-items: end;
+	  }
 
   .storage-editor {
     margin: 12px;
@@ -1256,10 +1533,14 @@ const erpStyles = `
     align-items: start;
   }
 
-  .editor-grid textarea {
-    grid-column: span 2;
-    min-height: 48px;
-  }
+	  .editor-grid textarea {
+	    grid-column: span 2;
+	    min-height: 48px;
+	  }
+
+	  .editor-grid .wide-field {
+	    grid-column: span 2;
+	  }
 
   .metric-grid.compact {
     margin-bottom: 0;

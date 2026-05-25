@@ -15,11 +15,18 @@ router.post('/products', (0, auth_1.requireRole)(['ADMIN']), (0, validate_1.vali
 router.put('/products/:id', (0, auth_1.requireRole)(['ADMIN']), (0, validate_1.validateBody)(erp_1.erpProductSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.updateErpProduct));
 router.get('/sales', (0, auth_1.requireRole)(['ADMIN', 'STAFF', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.listErpSales));
 router.post('/sales', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, validate_1.validateBody)(erp_1.erpSaleSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.createErpSale));
+router.put('/sales/:id', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, validate_1.validateBody)(erp_1.erpSaleUpdateSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.updateErpSale));
+router.delete('/sales/:id', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, asyncHandler_1.asyncHandler)(erpController_1.deleteErpSale));
 router.get('/movements', (0, auth_1.requireRole)(['ADMIN', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.listInventoryMovements));
 router.get('/expenses', (0, auth_1.requireRole)(['ADMIN', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.listExpenses));
 router.post('/expenses', (0, auth_1.requireRole)(['ADMIN', 'ACCOUNTANT']), (0, validate_1.validateBody)(erp_1.erpExpenseSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.createExpense));
 router.get('/wax-transactions', (0, auth_1.requireRole)(['ADMIN', 'STAFF', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.listWaxTransactions));
+router.get('/wax-summary', (0, auth_1.requireRole)(['ADMIN', 'STAFF', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.erpWaxSummary));
+router.get('/wax-settings', (0, auth_1.requireRole)(['ADMIN', 'STAFF', 'ACCOUNTANT']), (0, asyncHandler_1.asyncHandler)(erpController_1.erpWaxSettings));
+router.put('/wax-settings', (0, auth_1.requireRole)(['ADMIN']), (0, validate_1.validateBody)(erp_1.erpWaxSettingsSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.updateErpWaxSettings));
 router.post('/wax-transactions', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, validate_1.validateBody)(erp_1.erpWaxTransactionSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.createWaxTransaction));
+router.patch('/wax-transactions/:id', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, validate_1.validateBody)(erp_1.erpWaxTransactionSchema), (0, asyncHandler_1.asyncHandler)(erpController_1.updateWaxTransaction));
+router.delete('/wax-transactions/:id', (0, auth_1.requireRole)(['ADMIN', 'STAFF']), (0, asyncHandler_1.asyncHandler)(erpController_1.deleteWaxTransaction));
 router.get('/reports', (0, auth_1.requireRole)(['ADMIN', 'ACCOUNTANT']), (0, validate_1.validateQuery)(erp_1.erpReportQuerySchema), (0, asyncHandler_1.asyncHandler)(erpController_1.erpReports));
 router.get('/reports.csv', (0, auth_1.requireRole)(['ADMIN', 'ACCOUNTANT']), (0, validate_1.validateQuery)(erp_1.erpReportQuerySchema), (0, asyncHandler_1.asyncHandler)(erpController_1.exportReportCsv));
 exports.default = router;

@@ -114,6 +114,7 @@ model ErpProduct {
   updatedAt        DateTime               @updatedAt
   sales            ErpSale[]
   movements        ErpInventoryMovement[]
+  foundationWaxTransactions ErpWaxTransaction[]
 
   @@index([active, category])
   @@index([stockQuantity])
@@ -178,8 +179,9 @@ model ErpExpense {
 
 model ErpWaxTransaction {
   id                       Int      @id @default(autoincrement())
+  transactionType          String   @default("BUY")
   transactionDate          DateTime @default(now())
-  customerName             String
+  customerName             String?
   customerPhone            String?
   waxReceivedKg            Decimal  @db.Decimal(12, 3)
   waxPricePerKgEur         Decimal  @db.Decimal(12, 2)
@@ -187,6 +189,8 @@ model ErpWaxTransaction {
   foundationGivenKg        Decimal  @db.Decimal(12, 3)
   foundationPricePerKgEur  Decimal  @db.Decimal(12, 2)
   foundationValueEur       Decimal  @db.Decimal(12, 2)
+  foundationProductId      Int?
+  foundationProduct        ErpProduct? @relation(fields: [foundationProductId], references: [id])
   extraPaymentEur          Decimal  @db.Decimal(12, 2)
   balanceEur               Decimal  @db.Decimal(12, 2)
   notes                    String?
@@ -195,7 +199,14 @@ model ErpWaxTransaction {
   createdAt                DateTime @default(now())
 
   @@index([transactionDate])
-  @@index([customerName])
+  @@index([transactionType])
+}
+
+model ErpSetting {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ErpAuditLog {

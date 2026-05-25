@@ -41,17 +41,22 @@ export const erpExpenseSchema = z.object({
 })
 
 export const erpWaxTransactionSchema = z.object({
+  transactionType: z.enum(['BUY', 'SWAP']).default('BUY'),
   transactionDate: optionalDate,
   customerName: z.string().trim().min(1),
   customerPhone: z.string().trim().optional().nullable(),
   waxReceivedKg: nonNegative,
   waxPricePerKgEur: nonNegative,
-  foundationGivenKg: nonNegative,
-  foundationPricePerKgEur: nonNegative,
+  foundationGivenKg: nonNegative.default(0),
+  foundationPricePerKgEur: nonNegative.default(0),
   extraPaymentEur: nonNegative.default(0),
   foundationProductId: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().trim().optional().nullable(),
   allowNegativeStock: z.coerce.boolean().optional()
+})
+
+export const erpWaxSettingsSchema = z.object({
+  defaultBuyPriceEur: nonNegative
 })
 
 export const erpReportQuerySchema = z.object({

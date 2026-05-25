@@ -26,6 +26,52 @@ function toBgn(eur: Prisma.Decimal.Value) {
   return money(new Prisma.Decimal(eur).mul(BGN_RATE))
 }
 
+async function getSetting(key: string, fallback: string) {
+  const setting = await prisma.erpSetting.findUnique({ where: { key } })
+  return setting?.value ?? fallback
+}
+
+async function setSetting(key: string, value: string) {
+  return prisma.erpSetting.upsert({
+    where: { key },
+    update: { value },
+    create: { key, value }
+  })
+}
+
+async function waxDefaultBuyPrice() {
+  return money(await getSetting('wax.defaultBuyPriceEur', '5'))
+}
+
+async function waxSummaryData() {
+  const defaultBuyPrice = await waxDefaultBuyPrice()
+  const [waxAgg, transactionCount] = await Promise.all([
+    prisma.erpWaxTransaction.aggregate({
+      _sum: {
+        waxReceivedKg: true,
+        waxValueEur: true,
+        foundationGivenKg: true,
+        foundationValueEur: true,
+        extraPaymentEur: true,
+        balanceEur: true
+      }
+    }),
+    prisma.erpWaxTransaction.count()
+  ])
+  const waxStockKg = waxAgg._sum.waxReceivedKg || new Prisma.Decimal(0)
+  return {
+    defaultBuyPriceEur: defaultBuyPrice,
+    waxStockKg,
+    waxInventoryValueEur: money(waxStockKg.mul(defaultBuyPrice)),
+    totalWaxBoughtValueEur: waxAgg._sum.waxValueEur || 0,
+    totalFoundationGivenKg: waxAgg._sum.foundationGivenKg || 0,
+    totalFoundationGivenValueEur: waxAgg._sum.foundationValueEur || 0,
+    totalExtraPaymentEur: waxAgg._sum.extraPaymentEur || 0,
+    balanceEur: waxAgg._sum.balanceEur || 0,
+    transactionCount
+  }
+}
+
 function dayRange(date = new Date()) {
   const start = new Date(date)
   start.setHours(0, 0, 0, 0)
@@ -111,7 +157,7 @@ export async function erpMeta(_req: Request, res: Response) {
 export async function erpDashboard(_req: Request, res: Response) {
   const today = dayRange()
   const month = monthRange()
-  const [todayAgg, monthAgg, lowStockProducts, latestSales, latestWaxTransactions] = await Promise.all([
+  const [todayAgg, monthAgg, lowStockProducts, latestSales, latestWaxTransactions, waxSummary] = await Promise.all([
     prisma.erpSale.aggregate({ where: { saleDate: today }, _sum: { totalEur: true, profitEur: true } }),
     prisma.erpSale.aggregate({ where: { saleDate: month }, _sum: { totalEur: true, profitEur: true } }),
     prisma.erpProduct.findMany({
@@ -120,7 +166,8 @@ export async function erpDashboard(_req: Request, res: Response) {
       take: 8
     }),
     prisma.erpSale.findMany({ include: { product: true, createdBy: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }, take: 8 }),
-    prisma.erpWaxTransaction.findMany({ include: { createdBy: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }, take: 8 })
+    prisma.erpWaxTransaction.findMany({ include: { foundationProduct: true, createdBy: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }, take: 8 }),
+    waxSummaryData()
   ])
 
   res.json(decimalToNumber({
@@ -130,7 +177,9 @@ export async function erpDashboard(_req: Request, res: Response) {
     monthlyProfitEur: monthAgg._sum.profitEur || 0,
     lowStockProducts,
     latestSales,
-    latestWaxTransactions
+    latestWaxTransactions,
+    waxStockKg: waxSummary.waxStockKg,
+    waxInventoryValueEur: waxSummary.waxInventoryValueEur
   }))
 }
 
@@ -461,21 +510,45 @@ export async function createExpense(req: Request, res: Response) {
   res.status(201).json(decimalToNumber(expense))
 }
 
+export async function erpWaxSummary(_req: Request, res: Response) {
+  res.json(decimalToNumber(await waxSummaryData()))
+}
+
+export async function erpWaxSettings(_req: Request, res: Response) {
+  res.json(decimalToNumber({
+    defaultBuyPriceEur: await waxDefaultBuyPrice()
+  }))
+}
+
+export async function updateErpWaxSettings(req: Request, res: Response) {
+  const creatorId = userId(req)
+  const defaultBuyPrice = money(req.body.defaultBuyPriceEur)
+  const updated = await setSetting('wax.defaultBuyPriceEur', String(defaultBuyPrice))
+  await audit(creatorId, 'updated wax settings', 'erp_setting', updated.key, undefined, decimalToNumber(updated))
+  res.json(decimalToNumber({ defaultBuyPriceEur: defaultBuyPrice }))
+}
+
 export async function listWaxTransactions(_req: Request, res: Response) {
-  const rows = await prisma.erpWaxTransaction.findMany({ include: { createdBy: { select: { name: true, email: true } } }, orderBy: { transactionDate: 'desc' }, take: 200 })
+  const rows = await prisma.erpWaxTransaction.findMany({ include: { foundationProduct: true, createdBy: { select: { name: true, email: true } } }, orderBy: { transactionDate: 'desc' }, take: 200 })
   res.json(decimalToNumber(rows))
 }
 
 export async function createWaxTransaction(req: Request, res: Response) {
   const creatorId = userId(req)
+  const transactionType = req.body.transactionType || 'BUY'
   const waxReceivedKg = qty(req.body.waxReceivedKg)
-  const foundationGivenKg = qty(req.body.foundationGivenKg)
+  const foundationGivenKg = transactionType === 'SWAP' ? qty(req.body.foundationGivenKg) : qty(0)
   const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
-  const foundationValue = money(foundationGivenKg.mul(req.body.foundationPricePerKgEur))
-  const extraPayment = money(req.body.extraPaymentEur || 0)
-  const balance = money(waxValue.sub(foundationValue).sub(extraPayment))
-  const foundationProductId = req.body.foundationProductId
+  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
+  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
+  const extraPayment = transactionType === 'SWAP' ? money(req.body.extraPaymentEur || 0) : money(0)
+  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
+  const foundationProductId = transactionType === 'SWAP' && req.body.foundationProductId ? Number(req.body.foundationProductId) : null
   const allowNegative = role(req) === 'ADMIN' && Boolean(req.body.allowNegativeStock)
+
+  if (transactionType === 'SWAP' && foundationGivenKg.gt(0) && !foundationProductId) {
+    throw new AppError(400, 'РР·Р±РµСЂРµС‚Рµ РІРѕСЃСЉС‡РЅРё РѕСЃРЅРѕРІРё РѕС‚ СЃРєР»Р°РґР°.') 
+  }
 
   if (foundationProductId && foundationGivenKg.gt(0)) {
     await assertStock(foundationProductId, foundationGivenKg.neg(), allowNegative)
@@ -484,6 +557,7 @@ export async function createWaxTransaction(req: Request, res: Response) {
   const row = await prisma.$transaction(async (tx) => {
     const created = await tx.erpWaxTransaction.create({
       data: {
+        transactionType,
         transactionDate: req.body.transactionDate || new Date(),
         customerName: req.body.customerName,
         customerPhone: req.body.customerPhone,
@@ -491,10 +565,11 @@ export async function createWaxTransaction(req: Request, res: Response) {
         waxPricePerKgEur: money(req.body.waxPricePerKgEur),
         waxValueEur: waxValue,
         foundationGivenKg,
-        foundationPricePerKgEur: money(req.body.foundationPricePerKgEur),
+        foundationPricePerKgEur: foundationPricePerKg,
         foundationValueEur: foundationValue,
         extraPaymentEur: extraPayment,
         balanceEur: balance,
+        foundationProductId,
         notes: req.body.notes,
         createdById: creatorId
       }
@@ -520,6 +595,140 @@ export async function createWaxTransaction(req: Request, res: Response) {
 
   await audit(creatorId, 'created wax transaction', 'erp_wax_transaction', row.id, undefined, decimalToNumber(row))
   res.status(201).json(decimalToNumber(row))
+}
+
+export async function updateWaxTransaction(req: Request, res: Response) {
+  const creatorId = userId(req)
+  const transactionId = Number(req.params.id)
+  const existing = await prisma.erpWaxTransaction.findUnique({ where: { id: transactionId } })
+  if (!existing) throw new AppError(404, 'Сделката не е намерена.')
+
+  const transactionType = req.body.transactionType || 'BUY'
+  const waxReceivedKg = qty(req.body.waxReceivedKg)
+  const foundationGivenKg = transactionType === 'SWAP' ? qty(req.body.foundationGivenKg) : qty(0)
+  const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
+  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
+  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
+  const extraPayment = transactionType === 'SWAP' ? money(req.body.extraPaymentEur || 0) : money(0)
+  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
+  const foundationProductId = transactionType === 'SWAP' && req.body.foundationProductId ? Number(req.body.foundationProductId) : null
+  const allowNegative = role(req) === 'ADMIN' && Boolean(req.body.allowNegativeStock)
+
+  if (transactionType === 'SWAP' && foundationGivenKg.gt(0) && !foundationProductId) {
+    throw new AppError(400, 'РР·Р±РµСЂРµС‚Рµ РІРѕСЃСЉС‡РЅРё РѕСЃРЅРѕРІРё РѕС‚ СЃРєР»Р°РґР°.')
+  }
+
+  if (foundationProductId && foundationGivenKg.gt(0)) {
+    if (foundationProductId === existing.foundationProductId) {
+      const delta = foundationGivenKg.sub(existing.foundationGivenKg)
+      if (delta.gt(0)) {
+        await assertStock(foundationProductId, delta.neg(), allowNegative)
+      }
+    } else {
+      await assertStock(foundationProductId, foundationGivenKg.neg(), allowNegative)
+    }
+  }
+
+  const row = await prisma.$transaction(async (tx) => {
+    if (existing.foundationProductId && existing.foundationGivenKg.gt(0)) {
+      await tx.erpProduct.update({
+        where: { id: existing.foundationProductId },
+        data: { stockQuantity: { increment: existing.foundationGivenKg } }
+      })
+    }
+
+    if (foundationProductId && foundationGivenKg.gt(0)) {
+      await tx.erpProduct.update({
+        where: { id: foundationProductId },
+        data: { stockQuantity: { decrement: foundationGivenKg } }
+      })
+    }
+
+    const movement = await tx.erpInventoryMovement.findFirst({
+      where: {
+        referenceType: 'erp_wax_transaction',
+        referenceId: transactionId
+      }
+    })
+
+    if (movement) {
+      if (foundationProductId && foundationGivenKg.gt(0)) {
+        await tx.erpInventoryMovement.update({
+          where: { id: movement.id },
+          data: {
+            productId: foundationProductId,
+            quantityChange: foundationGivenKg.neg(),
+            notes: req.body.notes
+          }
+        })
+      } else {
+        await tx.erpInventoryMovement.delete({ where: { id: movement.id } })
+      }
+    } else if (foundationProductId && foundationGivenKg.gt(0)) {
+      await tx.erpInventoryMovement.create({
+        data: {
+          productId: foundationProductId,
+          movementType: 'WAX_EXCHANGE',
+          quantityChange: foundationGivenKg.neg(),
+          referenceType: 'erp_wax_transaction',
+          referenceId: transactionId,
+          notes: req.body.notes,
+          createdById: creatorId
+        }
+      })
+    }
+
+    const updated = await tx.erpWaxTransaction.update({
+      where: { id: transactionId },
+      data: {
+        transactionType,
+        transactionDate: req.body.transactionDate || existing.transactionDate,
+        customerName: req.body.customerName,
+        customerPhone: req.body.customerPhone,
+        waxReceivedKg,
+        waxPricePerKgEur: money(req.body.waxPricePerKgEur),
+        waxValueEur: waxValue,
+        foundationGivenKg,
+        foundationPricePerKgEur: foundationPricePerKg,
+        foundationValueEur: foundationValue,
+        extraPaymentEur: extraPayment,
+        balanceEur: balance,
+        foundationProductId,
+        notes: req.body.notes
+      }
+    })
+
+    return updated
+  })
+
+  await audit(creatorId, 'updated wax transaction', 'erp_wax_transaction', transactionId, decimalToNumber(existing), decimalToNumber(row))
+  res.json(decimalToNumber(row))
+}
+
+export async function deleteWaxTransaction(req: Request, res: Response) {
+  const creatorId = userId(req)
+  const transactionId = Number(req.params.id)
+  const existing = await prisma.erpWaxTransaction.findUnique({ where: { id: transactionId } })
+  if (!existing) throw new AppError(404, 'Сделката не е намерена.')
+
+  await prisma.$transaction(async (tx) => {
+    if (existing.foundationProductId && existing.foundationGivenKg.gt(0)) {
+      await tx.erpProduct.update({
+        where: { id: existing.foundationProductId },
+        data: { stockQuantity: { increment: existing.foundationGivenKg } }
+      })
+      await tx.erpInventoryMovement.deleteMany({
+        where: {
+          referenceType: 'erp_wax_transaction',
+          referenceId: transactionId
+        }
+      })
+    }
+    await tx.erpWaxTransaction.delete({ where: { id: transactionId } })
+  })
+
+  await audit(creatorId, 'deleted wax transaction', 'erp_wax_transaction', transactionId, decimalToNumber(existing), undefined)
+  res.status(204).send()
 }
 
 export async function erpReports(req: Request, res: Response) {
