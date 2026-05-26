@@ -16,6 +16,9 @@ export const erpProductSchema = z.object({
   minStockQuantity: nonNegative.default(0),
   totalSoldQuantity: nonNegative.default(0),
   active: z.coerce.boolean().default(true),
+  waxExchangeEnabled: z.coerce.boolean().default(false),
+  foundationUnitsPerWaxKg: nonNegative.optional().nullable(),
+  exchangeRoundingMode: z.enum(['FLOOR', 'ROUND', 'CEIL', 'NONE']).default('FLOOR'),
   notes: z.string().trim().optional().nullable()
 })
 
@@ -43,7 +46,7 @@ export const erpExpenseSchema = z.object({
 export const erpWaxTransactionSchema = z.object({
   transactionType: z.enum(['BUY', 'SWAP']).default('BUY'),
   transactionDate: optionalDate,
-  customerName: z.string().trim().min(1),
+  customerName: z.string().trim().optional().nullable(),
   customerPhone: z.string().trim().optional().nullable(),
   waxReceivedKg: nonNegative,
   waxPricePerKgEur: nonNegative,
@@ -51,6 +54,7 @@ export const erpWaxTransactionSchema = z.object({
   foundationPricePerKgEur: nonNegative.default(0),
   extraPaymentEur: nonNegative.default(0),
   foundationProductId: z.coerce.number().int().positive().optional().nullable(),
+  createExpense: z.coerce.boolean().optional(),
   notes: z.string().trim().optional().nullable(),
   allowNegativeStock: z.coerce.boolean().optional()
 })

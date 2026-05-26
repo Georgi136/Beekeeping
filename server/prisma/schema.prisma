@@ -109,6 +109,9 @@ model ErpProduct {
   minStockQuantity Decimal                @default(0) @db.Decimal(12, 3)
   totalSoldQuantity Decimal               @default(0) @db.Decimal(12, 3)
   active           Boolean                @default(true)
+  waxExchangeEnabled Boolean              @default(false)
+  foundationUnitsPerWaxKg Decimal?        @db.Decimal(12, 3)
+  exchangeRoundingMode String             @default("FLOOR")
   notes            String?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
@@ -122,6 +125,7 @@ model ErpProduct {
 
 model ErpSale {
   id            Int           @id @default(autoincrement())
+  status        String        @default("ACTIVE")
   saleDate      DateTime      @default(now())
   productId     Int
   product       ErpProduct    @relation(fields: [productId], references: [id])
@@ -136,8 +140,11 @@ model ErpSale {
   createdById   Int
   createdBy     User          @relation(fields: [createdById], references: [id])
   createdAt     DateTime      @default(now())
+  canceledAt    DateTime?
+  canceledById  Int?
 
   @@index([saleDate])
+  @@index([status])
   @@index([productId])
   @@index([createdById])
 }
@@ -162,6 +169,7 @@ model ErpInventoryMovement {
 
 model ErpExpense {
   id            Int             @id @default(autoincrement())
+  status        String          @default("ACTIVE")
   expenseDate   DateTime        @default(now())
   category      ExpenseCategory
   amountEur     Decimal         @db.Decimal(12, 2)
@@ -172,13 +180,17 @@ model ErpExpense {
   createdById   Int
   createdBy     User            @relation(fields: [createdById], references: [id])
   createdAt     DateTime        @default(now())
+  canceledAt    DateTime?
+  canceledById  Int?
 
   @@index([expenseDate])
+  @@index([status])
   @@index([category])
 }
 
 model ErpWaxTransaction {
   id                       Int      @id @default(autoincrement())
+  status                   String   @default("ACTIVE")
   transactionType          String   @default("BUY")
   transactionDate          DateTime @default(now())
   customerName             String?
@@ -189,6 +201,9 @@ model ErpWaxTransaction {
   foundationGivenKg        Decimal  @db.Decimal(12, 3)
   foundationPricePerKgEur  Decimal  @db.Decimal(12, 2)
   foundationValueEur       Decimal  @db.Decimal(12, 2)
+  suggestedFoundationGivenKg Decimal? @db.Decimal(12, 3)
+  foundationUnitsPerWaxKgUsed Decimal? @db.Decimal(12, 3)
+  exchangeRoundingModeUsed String?
   foundationProductId      Int?
   foundationProduct        ErpProduct? @relation(fields: [foundationProductId], references: [id])
   extraPaymentEur          Decimal  @db.Decimal(12, 2)
@@ -197,8 +212,11 @@ model ErpWaxTransaction {
   createdById              Int
   createdBy                User     @relation(fields: [createdById], references: [id])
   createdAt                DateTime @default(now())
+  canceledAt               DateTime?
+  canceledById             Int?
 
   @@index([transactionDate])
+  @@index([status])
   @@index([transactionType])
 }
 

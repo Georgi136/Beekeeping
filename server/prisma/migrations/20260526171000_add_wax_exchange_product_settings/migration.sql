@@ -1,0 +1,9 @@
+ALTER TABLE "ErpProduct"
+ADD COLUMN IF NOT EXISTS "waxExchangeEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "foundationUnitsPerWaxKg" DECIMAL(12, 3),
+ADD COLUMN IF NOT EXISTS "exchangeRoundingMode" TEXT NOT NULL DEFAULT 'FLOOR';
+
+ALTER TABLE "ErpWaxTransaction"
+ADD COLUMN IF NOT EXISTS "suggestedFoundationGivenKg" DECIMAL(12, 3),
+ADD COLUMN IF NOT EXISTS "foundationUnitsPerWaxKgUsed" DECIMAL(12, 3),
+ADD COLUMN IF NOT EXISTS "exchangeRoundingModeUsed" TEXT;

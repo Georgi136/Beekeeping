@@ -1,124 +1,58 @@
-# 🐝 Пчеларски Магазин САКИ - Дупница
+# Saki Bee Store
 
-Професионален пчеларски магазин с пълен набор от оборудване и консумативи за пчелари.
+React/Vite public website and admin ERP with Express, Prisma, and PostgreSQL.
 
-## 📋 Описание
+## Stack
 
-Това е уеб приложение за пчеларски магазин "САКИ" в Дупница, България. Проектът включва:
+- Frontend: React, TypeScript, Vite
+- Backend: Express, TypeScript
+- Database: PostgreSQL with Prisma
+- ERP areas: dashboard, storage, sales, expenses, reports, wax transactions
 
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js + Express + TypeScript
-
-## 🛠️ Технологии
-
-### Frontend
-- React 18
-- TypeScript
-- Vite
-- CSS Modules (вградени)
-
-### Backend
-- Node.js
-- Express
-- TypeScript
-- CORS
-
-## 🚀 Инсталация
-
-1. Клонирайте репозиторитота
-2. Инсталирайте зависимостите:
+## Development
 
 ```bash
-# Инсталиране на всички зависимости
 npm run install:all
-
-# Или инсталирайте отделно:
-cd client && npm install
-cd ../server && npm install
-```
-
-## ▶️ Стартиране
-
-### Режим на разработка
-```bash
 npm run dev
 ```
 
-Това стартира:
-- Frontend на http://localhost:5173
-- Backend на http://localhost:3001
+If port `3001` is already busy, stop the old server process before starting the app again.
 
-### Продукционна версия
+## Production Build
+
 ```bash
 npm run build
-npm start
 ```
 
-## 📁 Структура на проекта
-
-```
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/    # React компоненти
-│   │   ├── App.tsx        # Главен компонент
-│   │   ├── main.tsx       # Точка на вход
-│   │   └── index.css      # Глобални стилове
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── package.json
-│
-├── server/                 # Express backend
-│   ├── src/
-│   │   ├── routes/       # API маршрути
-│   │   └── index.ts      # Сървър
-│   ├── tsconfig.json
-│   └── package.json
-│
-└── package.json           # Root package.json
-```
-
-## 📞 Контакти
-
-- **Адрес**: гр. Дупница, България
-- **Телефон**: +359 88 123 4567
-- **Имейл**: info@saki-bee.bg
-
-## 📄 Лиценз
-
-MIT License
-
-## Vercel Deployment
-
-This repo now includes `vercel.json` for a root-level Vercel deploy:
-
-- Install Command: `npm install && cd client && npm install && cd ../server && npm install`
-- Build Command: `npm run build`
-- Output Directory: `client/dist`
-- API routes: `/api/*`
-- Uploaded files route: `/uploads/*`
-- SPA fallback: all other routes go to `client/dist/index.html`
-
-For the normal same-project Vercel deploy, leave `VITE_API_URL` unset so the client uses same-origin `/api` requests. Set `VITE_API_URL` only if you deploy the API somewhere else.
-
-## Production Setup
-
-The store now uses PostgreSQL with Prisma instead of in-memory data. Create a production database and set these environment variables in Vercel or your backend host:
-
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-- `CLIENT_ORIGIN`
-- `BLOB_READ_WRITE_TOKEN`
-
-Then run:
+Run database migrations before serving a production build:
 
 ```bash
 cd server
 npm run db:deploy
-npm run db:seed
 ```
 
-Media uploads use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set. Without it, uploads fall back to the local `uploads` folder for development only.
+## Database Backups
 
-For production, use Node.js 20+.
+Create backups before migrations, imports, or production releases.
+
+PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force backups
+pg_dump $env:DATABASE_URL -Fc -f "backups\sakimed-$(Get-Date -Format yyyyMMdd-HHmm).dump"
+```
+
+Bash:
+
+```bash
+mkdir -p backups
+pg_dump "$DATABASE_URL" -Fc -f "backups/sakimed-$(date +%Y%m%d-%H%M).dump"
+```
+
+Restore:
+
+```bash
+pg_restore --clean --if-exists -d "$DATABASE_URL" backups/sakimed-YYYYMMDD-HHMM.dump
+```
+
+Always test a restore on a staging database before relying on a backup procedure in production.

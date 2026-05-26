@@ -1,8 +1,10 @@
 import { Router } from 'express'
+import multer from 'multer'
 import {
   createErpProduct,
   createErpSale,
   createExpense,
+  deleteExpense,
   createWaxTransaction,
   deleteErpSale,
   deleteWaxTransaction,
@@ -12,14 +14,17 @@ import {
   erpWaxSettings,
   erpWaxSummary,
   exportReportCsv,
+  importProducts,
   listErpProducts,
   listErpSales,
   listExpenses,
   listInventoryMovements,
   listWaxTransactions,
+  previewProductImport,
   updateErpWaxSettings,
   updateErpSale,
   updateErpProduct,
+  updateExpense,
   updateWaxTransaction
 } from '../controllers/erpController'
 import { asyncHandler } from '../middleware/asyncHandler'
@@ -28,6 +33,10 @@ import { validateBody, validateQuery } from '../middleware/validate'
 import { erpExpenseSchema, erpProductSchema, erpReportQuerySchema, erpSaleSchema, erpSaleUpdateSchema, erpWaxSettingsSchema, erpWaxTransactionSchema } from '../validators/erp'
 
 const router = Router()
+const productImportUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }
+})
 
 router.use(requireRole(['ADMIN', 'STAFF', 'ACCOUNTANT']))
 
@@ -37,6 +46,8 @@ router.get('/dashboard', asyncHandler(erpDashboard))
 router.get('/products', asyncHandler(listErpProducts))
 router.post('/products', requireRole(['ADMIN']), validateBody(erpProductSchema), asyncHandler(createErpProduct))
 router.put('/products/:id', requireRole(['ADMIN']), validateBody(erpProductSchema), asyncHandler(updateErpProduct))
+router.post('/products/import-preview', requireRole(['ADMIN']), productImportUpload.single('file'), asyncHandler(previewProductImport))
+router.post('/products/import', requireRole(['ADMIN']), productImportUpload.single('file'), asyncHandler(importProducts))
 
 router.get('/sales', requireRole(['ADMIN', 'STAFF', 'ACCOUNTANT']), asyncHandler(listErpSales))
 router.post('/sales', requireRole(['ADMIN', 'STAFF']), validateBody(erpSaleSchema), asyncHandler(createErpSale))
@@ -47,6 +58,8 @@ router.get('/movements', requireRole(['ADMIN', 'ACCOUNTANT']), asyncHandler(list
 
 router.get('/expenses', requireRole(['ADMIN', 'ACCOUNTANT']), asyncHandler(listExpenses))
 router.post('/expenses', requireRole(['ADMIN', 'ACCOUNTANT']), validateBody(erpExpenseSchema), asyncHandler(createExpense))
+router.put('/expenses/:id', requireRole(['ADMIN', 'ACCOUNTANT']), validateBody(erpExpenseSchema), asyncHandler(updateExpense))
+router.delete('/expenses/:id', requireRole(['ADMIN', 'ACCOUNTANT']), asyncHandler(deleteExpense))
 
 router.get('/wax-transactions', requireRole(['ADMIN', 'STAFF', 'ACCOUNTANT']), asyncHandler(listWaxTransactions))
 router.get('/wax-summary', requireRole(['ADMIN', 'STAFF', 'ACCOUNTANT']), asyncHandler(erpWaxSummary))

@@ -17,6 +17,9 @@ exports.erpProductSchema = zod_1.z.object({
     minStockQuantity: nonNegative.default(0),
     totalSoldQuantity: nonNegative.default(0),
     active: zod_1.z.coerce.boolean().default(true),
+    waxExchangeEnabled: zod_1.z.coerce.boolean().default(false),
+    foundationUnitsPerWaxKg: nonNegative.optional().nullable(),
+    exchangeRoundingMode: zod_1.z.enum(['FLOOR', 'ROUND', 'CEIL', 'NONE']).default('FLOOR'),
     notes: zod_1.z.string().trim().optional().nullable()
 });
 exports.erpSaleSchema = zod_1.z.object({
@@ -40,7 +43,7 @@ exports.erpExpenseSchema = zod_1.z.object({
 exports.erpWaxTransactionSchema = zod_1.z.object({
     transactionType: zod_1.z.enum(['BUY', 'SWAP']).default('BUY'),
     transactionDate: optionalDate,
-    customerName: zod_1.z.string().trim().min(1),
+    customerName: zod_1.z.string().trim().optional().nullable(),
     customerPhone: zod_1.z.string().trim().optional().nullable(),
     waxReceivedKg: nonNegative,
     waxPricePerKgEur: nonNegative,
@@ -48,6 +51,7 @@ exports.erpWaxTransactionSchema = zod_1.z.object({
     foundationPricePerKgEur: nonNegative.default(0),
     extraPaymentEur: nonNegative.default(0),
     foundationProductId: zod_1.z.coerce.number().int().positive().optional().nullable(),
+    createExpense: zod_1.z.coerce.boolean().optional(),
     notes: zod_1.z.string().trim().optional().nullable(),
     allowNegativeStock: zod_1.z.coerce.boolean().optional()
 });
