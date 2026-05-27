@@ -20,6 +20,9 @@ export interface ErpProduct {
   active: boolean
   waxExchangeEnabled?: boolean
   foundationUnitsPerWaxKg?: number | null
+  paidWaxExchangeEnabled?: boolean
+  paidFoundationUnitsPerWaxKg?: number | null
+  paidExchangeExtraPricePerUnitEur?: number | null
   exchangeRoundingMode?: 'FLOOR' | 'ROUND' | 'CEIL' | 'NONE'
   notes?: string | null
 }
@@ -52,6 +55,7 @@ export interface Dashboard {
 export interface WaxTransaction {
   id: number
   transactionType?: 'BUY' | 'SWAP'
+  swapCalculationMode?: 'STANDARD_SWAP' | 'PAID_SWAP' | 'SWAP_WITH_EXTRA_PAYMENT'
   transactionDate: string
   customerName?: string | null
   customerPhone?: string | null
@@ -64,6 +68,7 @@ export interface WaxTransaction {
   suggestedFoundationGivenKg?: number | null
   foundationUnitsPerWaxKgUsed?: number | null
   exchangeRoundingModeUsed?: string | null
+  extraPaymentPerFoundationEur?: number | null
   foundationProductId?: number | null
   foundationProduct?: ErpProduct | null
   extraPaymentEur: number
@@ -93,7 +98,7 @@ export interface Reports {
   salesByProduct: Array<{ product_id: number; product_name: string; quantity: number; turnover_eur: number; profit_eur: number }>
   expensesByCategory: Array<{ category: string; _sum: { amountEur: number | null } }>
   lowStockProducts: ErpProduct[]
-  totals: { turnoverEur: number; grossProfitEur: number; expensesEur: number; netProfitEur: number }
+  totals: { turnoverEur: number; grossProfitEur: number; expensesEur: number; waxSwapExtraPaymentEur?: number; netProfitEur: number }
 }
 
 export interface ProductImportRow {

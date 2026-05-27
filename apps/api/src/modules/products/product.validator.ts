@@ -1,4 +1,4 @@
-import { ProductStatus } from '@prisma/client'
+import { ProductStatus } from '../../lib/prismaClient'
 import { z } from 'zod'
 
 const optionalString = z.string().trim().optional().nullable()

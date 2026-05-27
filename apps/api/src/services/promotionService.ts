@@ -1,4 +1,4 @@
-import type { DiscountType, Prisma } from '@prisma/client'
+import type { DiscountType, Prisma } from '../lib/prismaClient'
 import {
   createPromotion,
   deletePromotion,

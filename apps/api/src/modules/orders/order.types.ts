@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '../../lib/prismaClient'
 import { orderInclude } from './order.repository'
 
 export interface OrderInput {

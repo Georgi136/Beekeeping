@@ -1,4 +1,4 @@
-import { DiscountType } from '@prisma/client'
+import { DiscountType } from '../lib/prismaClient'
 import { z } from 'zod'
 
 const nullableNumber = z.coerce.number().int().positive().optional().nullable()

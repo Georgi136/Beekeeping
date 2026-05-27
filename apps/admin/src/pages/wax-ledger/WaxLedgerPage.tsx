@@ -18,15 +18,34 @@ export default function WaxLedgerPage({ waxSummary, waxTransactions, formatEur }
           ['Наличен восък', `${Number(waxSummary.waxStockKg || 0).toFixed(3)} кг`, formatEur(waxSummary.waxInventoryValueEur)],
           ['Купен восък', formatEur(waxSummary.totalWaxBoughtValueEur), 'стойност сделки'],
           ['Дадени основи', `${Number(waxSummary.totalFoundationGivenKg || 0).toFixed(0)} бр.`, formatEur(waxSummary.totalFoundationGivenValueEur)],
+          ['Доплащане', formatEur(waxSummary.totalExtraPaymentEur), 'от размяна на восък'],
           ['Баланс', formatEur(waxSummary.balanceEur), `${waxSummary.transactionCount} сделки`]
         ]}
       />
       <ReportTable
-        headers={['Дата', 'Тип', 'Номер', 'Восък кг', 'Основи', 'Стойност восък', 'Баланс']}
+        headers={['Дата', 'Номер', 'Режим', 'Восък кг', 'Продукт основи', 'Коефициент', 'Изчислени', 'Дадени', 'Доплащане/бр.', 'Общо доплащане', 'Баланс']}
         rows={waxTransactions.map((item) => {
-          const foundationUnit = 'бр.'
-          const foundationQty = Number(item.foundationGivenKg).toFixed(0)
-          return [new Date(item.transactionDate).toLocaleDateString('bg-BG'), item.transactionType === 'SWAP' ? 'Смяна' : 'Покупка', `#${item.id}`, String(item.waxReceivedKg), `${foundationQty} ${foundationUnit}`, formatEur(item.waxValueEur), formatEur(item.balanceEur)]
+          const isPaidSwap = item.swapCalculationMode === 'PAID_SWAP' || item.swapCalculationMode === 'SWAP_WITH_EXTRA_PAYMENT'
+          const isSwap = item.transactionType === 'SWAP'
+          const mode = isSwap ? (isPaidSwap ? 'С доплащане' : 'Стандартна размяна') : 'Покупка'
+          const ratio = item.foundationUnitsPerWaxKgUsed ? `${Number(item.foundationUnitsPerWaxKgUsed).toFixed(3)} осн./кг` : '-'
+          const calculatedQty = item.suggestedFoundationGivenKg !== null && item.suggestedFoundationGivenKg !== undefined
+            ? `${Number(item.suggestedFoundationGivenKg).toFixed(0)} бр.`
+            : '-'
+          const actualQty = `${Number(item.foundationGivenKg || 0).toFixed(0)} бр.`
+          return [
+            new Date(item.transactionDate).toLocaleDateString('bg-BG'),
+            `#${item.id}`,
+            mode,
+            String(item.waxReceivedKg),
+            item.foundationProduct?.name || '-',
+            ratio,
+            calculatedQty,
+            actualQty,
+            item.extraPaymentPerFoundationEur ? formatEur(item.extraPaymentPerFoundationEur) : '-',
+            formatEur(item.extraPaymentEur),
+            formatEur(item.balanceEur)
+          ]
         })}
       />
     </section>

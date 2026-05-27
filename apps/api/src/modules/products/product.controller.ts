@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import { ProductStatus } from '@prisma/client'
+import { ProductStatus } from '../../lib/prismaClient'
 import {
   archiveProduct,
   createProductRecord,

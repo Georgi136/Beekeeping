@@ -18,6 +18,9 @@ export const erpProductSchema = z.object({
   active: z.coerce.boolean().default(true),
   waxExchangeEnabled: z.coerce.boolean().default(false),
   foundationUnitsPerWaxKg: nonNegative.optional().nullable(),
+  paidWaxExchangeEnabled: z.coerce.boolean().default(false),
+  paidFoundationUnitsPerWaxKg: nonNegative.optional().nullable(),
+  paidExchangeExtraPricePerUnitEur: nonNegative.optional().nullable(),
   exchangeRoundingMode: z.enum(['FLOOR', 'ROUND', 'CEIL', 'NONE']).default('FLOOR'),
   notes: z.string().trim().optional().nullable()
 })
@@ -45,6 +48,7 @@ export const erpExpenseSchema = z.object({
 
 export const erpWaxTransactionSchema = z.object({
   transactionType: z.enum(['BUY', 'SWAP']).default('BUY'),
+  swapCalculationMode: z.enum(['STANDARD_SWAP', 'PAID_SWAP', 'SWAP_WITH_EXTRA_PAYMENT']).default('STANDARD_SWAP'),
   transactionDate: optionalDate,
   customerName: z.string().trim().optional().nullable(),
   customerPhone: z.string().trim().optional().nullable(),

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
-import type { UserRole } from '@prisma/client'
+import type { UserRole } from '../lib/prismaClient'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
 import { AppError } from '../errors/AppError'

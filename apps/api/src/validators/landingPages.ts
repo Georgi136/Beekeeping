@@ -1,4 +1,4 @@
-import { PageStatus } from '@prisma/client'
+import { PageStatus } from '../lib/prismaClient'
 import { z } from 'zod'
 
 export const landingPageUpsertSchema = z.object({

@@ -1,4 +1,4 @@
-import { ProductStatus, type Prisma } from '@prisma/client'
+import { ProductStatus, type Prisma } from '../../lib/prismaClient'
 import { AppError } from '../../errors/AppError'
 import {
   createProduct,

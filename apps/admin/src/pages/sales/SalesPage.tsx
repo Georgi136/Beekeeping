@@ -15,7 +15,7 @@ interface SaleForm {
 }
 
 interface SalesPageProps {
-  saleCardRef: RefObject<HTMLFormElement | null>
+  saleCardRef: RefObject<HTMLFormElement>
   editingSaleId: number | null
   saleForm: SaleForm
   products: ErpProduct[]

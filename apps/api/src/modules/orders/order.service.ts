@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../lib/prismaClient'
 import { AppError } from '../../errors/AppError'
 import { prisma } from '../../lib/prisma'
 import {

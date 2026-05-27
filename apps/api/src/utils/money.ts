@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../lib/prismaClient'
 
 export function toNumber(value: Prisma.Decimal | number | string | null | undefined) {
   if (value === null || value === undefined) return null

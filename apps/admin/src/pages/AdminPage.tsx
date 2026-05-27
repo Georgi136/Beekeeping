@@ -26,6 +26,9 @@ const emptyProduct = {
   active: true,
   waxExchangeEnabled: false,
   foundationUnitsPerWaxKg: '',
+  paidWaxExchangeEnabled: false,
+  paidFoundationUnitsPerWaxKg: '',
+  paidExchangeExtraPricePerUnitEur: '',
   exchangeRoundingMode: 'FLOOR',
   notes: ''
 }
@@ -86,8 +89,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
-  const saleCardRef = useRef<HTMLFormElement | null>(null)
-  const productEditorRef = useRef<HTMLFormElement | null>(null)
+  const saleCardRef = useRef<HTMLFormElement>(null)
+  const productEditorRef = useRef<HTMLFormElement>(null)
 
   const [dashboard, setDashboard] = useState<Dashboard | null>(null)
   const [products, setProducts] = useState<ErpProduct[]>([])
@@ -122,6 +125,7 @@ export default function AdminPage() {
   const [foundationQtyManual, setFoundationQtyManual] = useState(false)
   const [waxForm, setWaxForm] = useState({
     transactionType: 'BUY' as 'BUY' | 'SWAP',
+    swapCalculationMode: 'STANDARD_SWAP' as 'STANDARD_SWAP' | 'PAID_SWAP',
     transactionDate: today(),
     waxReceivedKg: '0',
     waxPricePerKgEur: '5',
@@ -258,6 +262,9 @@ export default function AdminPage() {
       active: product.active,
       waxExchangeEnabled: Boolean(product.waxExchangeEnabled),
       foundationUnitsPerWaxKg: product.foundationUnitsPerWaxKg ? String(product.foundationUnitsPerWaxKg) : '',
+      paidWaxExchangeEnabled: Boolean(product.paidWaxExchangeEnabled),
+      paidFoundationUnitsPerWaxKg: product.paidFoundationUnitsPerWaxKg ? String(product.paidFoundationUnitsPerWaxKg) : '',
+      paidExchangeExtraPricePerUnitEur: product.paidExchangeExtraPricePerUnitEur ? String(product.paidExchangeExtraPricePerUnitEur) : '',
       exchangeRoundingMode: product.exchangeRoundingMode || 'FLOOR',
       notes: product.notes || ''
     })
@@ -279,6 +286,9 @@ export default function AdminPage() {
           totalSoldQuantity: Number(productForm.totalSoldQuantity),
           waxExchangeEnabled: productForm.category === 'WAX_FOUNDATIONS' ? productForm.waxExchangeEnabled : false,
           foundationUnitsPerWaxKg: productForm.category === 'WAX_FOUNDATIONS' && productForm.foundationUnitsPerWaxKg ? Number(productForm.foundationUnitsPerWaxKg) : null,
+          paidWaxExchangeEnabled: productForm.category === 'WAX_FOUNDATIONS' ? productForm.paidWaxExchangeEnabled : false,
+          paidFoundationUnitsPerWaxKg: productForm.category === 'WAX_FOUNDATIONS' && productForm.paidFoundationUnitsPerWaxKg ? Number(productForm.paidFoundationUnitsPerWaxKg) : null,
+          paidExchangeExtraPricePerUnitEur: productForm.category === 'WAX_FOUNDATIONS' && productForm.paidExchangeExtraPricePerUnitEur ? Number(productForm.paidExchangeExtraPricePerUnitEur) : null,
           exchangeRoundingMode: productForm.exchangeRoundingMode
         })
       })
@@ -418,6 +428,7 @@ export default function AdminPage() {
     setFoundationQtyManual(false)
     setWaxForm({
       transactionType: 'BUY',
+      swapCalculationMode: 'STANDARD_SWAP',
       transactionDate: today(),
       waxReceivedKg: '0',
       waxPricePerKgEur: String(defaultPrice),
@@ -435,6 +446,7 @@ export default function AdminPage() {
     setWaxForm((current) => ({
       ...current,
       transactionType,
+      swapCalculationMode: transactionType === 'BUY' ? 'STANDARD_SWAP' : current.swapCalculationMode,
       foundationGivenKg: transactionType === 'BUY' ? '0' : current.foundationGivenKg,
       foundationPricePerKgEur: transactionType === 'BUY' ? '0' : current.foundationPricePerKgEur,
       foundationProductId: transactionType === 'BUY' ? '' : current.foundationProductId,
@@ -477,6 +489,7 @@ export default function AdminPage() {
     setTab('wax')
     setWaxForm({
       transactionType,
+      swapCalculationMode: transaction.swapCalculationMode === 'PAID_SWAP' || transaction.swapCalculationMode === 'SWAP_WITH_EXTRA_PAYMENT' ? 'PAID_SWAP' : 'STANDARD_SWAP',
       transactionDate: transaction.transactionDate.slice(0, 10),
       waxReceivedKg: String(transaction.waxReceivedKg),
       waxPricePerKgEur: String(transaction.waxPricePerKgEur),
@@ -522,17 +535,24 @@ export default function AdminPage() {
   const foundationProducts = products.filter((product) => (
     product.category === 'WAX_FOUNDATIONS' &&
     product.active &&
-    product.waxExchangeEnabled &&
-    product.foundationUnitsPerWaxKg !== null &&
-    product.foundationUnitsPerWaxKg !== undefined
+    (
+      waxForm.swapCalculationMode === 'PAID_SWAP'
+        ? product.paidWaxExchangeEnabled && product.paidFoundationUnitsPerWaxKg !== null && product.paidFoundationUnitsPerWaxKg !== undefined && product.paidExchangeExtraPricePerUnitEur !== null && product.paidExchangeExtraPricePerUnitEur !== undefined
+        : product.waxExchangeEnabled && product.foundationUnitsPerWaxKg !== null && product.foundationUnitsPerWaxKg !== undefined
+    )
   ))
   const selectedFoundationProduct = foundationProducts.find((product) => String(product.id) === waxForm.foundationProductId)
   const foundationUnitLabel = 'бр.'
   const foundationQuantityStep = '1'
   const isWaxSwap = waxForm.transactionType === 'SWAP'
+  const isPaidWaxSwap = isWaxSwap && waxForm.swapCalculationMode === 'PAID_SWAP'
+  const activeFoundationRatio = isPaidWaxSwap
+    ? selectedFoundationProduct?.paidFoundationUnitsPerWaxKg
+    : selectedFoundationProduct?.foundationUnitsPerWaxKg
+  const paidSwapExtraPricePerUnit = Number(selectedFoundationProduct?.paidExchangeExtraPricePerUnitEur || 0)
   const waxValue = Number(waxForm.waxReceivedKg || 0) * Number(waxForm.waxPricePerKgEur || 0)
-  const rawSuggestedFoundationQty = isWaxSwap && selectedFoundationProduct?.foundationUnitsPerWaxKg
-    ? Number(waxForm.waxReceivedKg || 0) * Number(selectedFoundationProduct.foundationUnitsPerWaxKg)
+  const rawSuggestedFoundationQty = isWaxSwap && activeFoundationRatio
+    ? Number(waxForm.waxReceivedKg || 0) * Number(activeFoundationRatio)
     : 0
   const suggestedFoundationQty = selectedFoundationProduct ? roundExchangeQuantity(rawSuggestedFoundationQty, selectedFoundationProduct.exchangeRoundingMode) : 0
   const foundationValue = isWaxSwap ? Number(waxForm.foundationGivenKg || 0) * Number(waxForm.foundationPricePerKgEur || 0) : 0
@@ -549,6 +569,12 @@ export default function AdminPage() {
     if (!isWaxSwap || !selectedFoundationProduct || foundationQtyManual) return
     setWaxForm((current) => ({ ...current, foundationGivenKg: String(suggestedFoundationQty) }))
   }, [isWaxSwap, selectedFoundationProduct?.id, waxForm.waxReceivedKg, suggestedFoundationQty, foundationQtyManual])
+
+  useEffect(() => {
+    if (!isPaidWaxSwap || !selectedFoundationProduct) return
+    const foundationQty = Number(waxForm.foundationGivenKg || 0)
+    setWaxForm((current) => ({ ...current, extraPaymentEur: (foundationQty * paidSwapExtraPricePerUnit).toFixed(2) }))
+  }, [isPaidWaxSwap, selectedFoundationProduct?.id, waxForm.foundationGivenKg, paidSwapExtraPricePerUnit])
 
   useLayoutEffect(() => {
     if (tab !== 'sales' || !saleCardRef.current) return
@@ -707,8 +733,11 @@ export default function AdminPage() {
             editingWaxId={editingWaxId}
             waxForm={waxForm}
             isWaxSwap={isWaxSwap}
+            isPaidWaxSwap={isPaidWaxSwap}
             foundationProducts={foundationProducts}
             selectedFoundationProduct={selectedFoundationProduct}
+            activeFoundationRatio={activeFoundationRatio ? Number(activeFoundationRatio) : null}
+            paidSwapExtraPricePerUnit={paidSwapExtraPricePerUnit}
             foundationUnitLabel={foundationUnitLabel}
             foundationQuantityStep={foundationQuantityStep}
             suggestedFoundationQty={suggestedFoundationQty}

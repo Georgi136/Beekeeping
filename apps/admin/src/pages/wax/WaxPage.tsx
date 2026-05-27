@@ -7,6 +7,7 @@ type MoneyFormatter = (value: number | string | null | undefined) => string
 
 interface WaxForm {
   transactionType: 'BUY' | 'SWAP'
+  swapCalculationMode: 'STANDARD_SWAP' | 'PAID_SWAP'
   transactionDate: string
   waxReceivedKg: string
   waxPricePerKgEur: string
@@ -24,8 +25,11 @@ interface WaxPageProps {
   editingWaxId: number | null
   waxForm: WaxForm
   isWaxSwap: boolean
+  isPaidWaxSwap: boolean
   foundationProducts: ErpProduct[]
   selectedFoundationProduct?: ErpProduct
+  activeFoundationRatio?: number | null
+  paidSwapExtraPricePerUnit: number
   foundationUnitLabel: string
   foundationQuantityStep: string
   suggestedFoundationQty: number
@@ -51,8 +55,11 @@ export default function WaxPage({
   editingWaxId,
   waxForm,
   isWaxSwap,
+  isPaidWaxSwap,
   foundationProducts,
   selectedFoundationProduct,
+  activeFoundationRatio,
+  paidSwapExtraPricePerUnit,
   foundationUnitLabel,
   foundationQuantityStep,
   suggestedFoundationQty,
@@ -87,8 +94,14 @@ export default function WaxPage({
             <h2>{editingWaxId ? 'Редакция на восъчна сделка' : 'Нова восъчна сделка'}</h2>
             <div className="mode-switch">
               <button type="button" className={waxForm.transactionType === 'BUY' ? 'active' : ''} onClick={() => onSetWaxTransactionType('BUY')}>Купувам восък</button>
-              <button type="button" className={waxForm.transactionType === 'SWAP' ? 'active' : ''} onClick={() => onSetWaxTransactionType('SWAP')}>Смяна основи за восък</button>
+              <button type="button" className={waxForm.transactionType === 'SWAP' ? 'active' : ''} onClick={() => onSetWaxTransactionType('SWAP')}>Восък за основи</button>
             </div>
+            {isWaxSwap && (
+              <div className="mode-switch">
+                <button type="button" className={waxForm.swapCalculationMode === 'STANDARD_SWAP' ? 'active' : ''} onClick={() => onWaxFormChange({ ...waxForm, swapCalculationMode: 'STANDARD_SWAP', foundationProductId: '', foundationGivenKg: '0', extraPaymentEur: '0' })}>Стандартна размяна</button>
+                <button type="button" className={waxForm.swapCalculationMode === 'PAID_SWAP' ? 'active' : ''} onClick={() => onWaxFormChange({ ...waxForm, swapCalculationMode: 'PAID_SWAP', foundationProductId: '', foundationGivenKg: '0', extraPaymentEur: '0' })}>Размяна с доплащане</button>
+              </div>
+            )}
             <label>Дата<input type="date" value={waxForm.transactionDate} onChange={(e) => onWaxFormChange({ ...waxForm, transactionDate: e.target.value })} /></label>
             <div className="two">
               <label>Приет восък кг<input type="number" step="0.001" min="0" value={waxForm.waxReceivedKg} onChange={(e) => onWaxFormChange({ ...waxForm, waxReceivedKg: e.target.value })} /></label>
@@ -106,7 +119,8 @@ export default function WaxPage({
                 </div>
                 <label>Доплатено от клиента EUR<input type="number" step="0.01" min="0" value={waxForm.extraPaymentEur} onChange={(e) => onWaxFormChange({ ...waxForm, extraPaymentEur: e.target.value })} /></label>
                 {selectedFoundationProduct && <div className="storage-hint">
-                  {Number(waxForm.waxReceivedKg || 0)} кг восък × {selectedFoundationProduct.foundationUnitsPerWaxKg} осн./кг = {suggestedFoundationQty} основи
+                  {Number(waxForm.waxReceivedKg || 0)} кг восък × {activeFoundationRatio} осн./кг = {suggestedFoundationQty} основи
+                  {isPaidWaxSwap && <><br />{Number(waxForm.foundationGivenKg || 0)} основи × {paidSwapExtraPricePerUnit.toFixed(2)} EUR = {formatEur(waxForm.extraPaymentEur)} доплащане</>}
                   {foundationQtyManual && <><br />Количеството е променено ръчно.</>}
                 </div>}
               </>
@@ -126,5 +140,8 @@ export default function WaxPage({
 function WaxRow({ item, formatEur, onEdit, onCancel }: { item: WaxTransaction; formatEur: MoneyFormatter; onEdit: (item: WaxTransaction) => void; onCancel: (item: WaxTransaction) => void }) {
   const foundationUnit = 'бр.'
   const foundationQty = Number(item.foundationGivenKg).toFixed(0)
-  return <ActionRow title={`${item.transactionType === 'SWAP' ? 'Смяна' : 'Покупка'} #${item.id} | ${new Date(item.transactionDate).toLocaleDateString('bg-BG')}`} meta={`восък ${item.waxReceivedKg} кг | основи ${foundationQty} ${foundationUnit} | баланс ${formatEur(item.balanceEur)}`}><button className="mini-btn" onClick={() => onEdit(item)}>{commonText.edit}</button><button className="mini-btn danger" onClick={() => onCancel(item)}>{commonText.delete}</button></ActionRow>
+  const isPaidSwap = item.swapCalculationMode === 'PAID_SWAP' || item.swapCalculationMode === 'SWAP_WITH_EXTRA_PAYMENT'
+  const mode = item.transactionType === 'SWAP' ? (isPaidSwap ? 'Смяна с доплащане' : 'Смяна') : 'Покупка'
+  const extraPayment = isPaidSwap ? ` | доплащане ${formatEur(item.extraPaymentEur)}` : ''
+  return <ActionRow title={`${mode} #${item.id} | ${new Date(item.transactionDate).toLocaleDateString('bg-BG')}`} meta={`восък ${item.waxReceivedKg} кг | основи ${foundationQty} ${foundationUnit}${extraPayment} | баланс ${formatEur(item.balanceEur)}`}><button className="mini-btn" onClick={() => onEdit(item)}>{commonText.edit}</button><button className="mini-btn danger" onClick={() => onCancel(item)}>{commonText.delete}</button></ActionRow>
 }

@@ -1,4 +1,4 @@
-import type { PageStatus, Prisma } from '@prisma/client'
+import type { PageStatus, Prisma } from '../lib/prismaClient'
 import {
   createLandingPage,
   deleteLandingPage,

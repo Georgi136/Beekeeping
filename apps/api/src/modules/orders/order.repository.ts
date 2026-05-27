@@ -1,4 +1,4 @@
-import { OrderStatus, type Prisma } from '@prisma/client'
+import { OrderStatus, type Prisma } from '../../lib/prismaClient'
 import { prisma } from '../../lib/prisma'
 
 export const orderInclude = {

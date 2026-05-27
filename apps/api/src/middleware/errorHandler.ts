@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../lib/prismaClient'
 import type { ErrorRequestHandler } from 'express'
 import { ZodError } from 'zod'
 import { AppError } from '../errors/AppError'

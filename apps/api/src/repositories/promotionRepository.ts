@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../lib/prismaClient'
 import { prisma } from '../lib/prisma'
 
 export const promotionInclude = {

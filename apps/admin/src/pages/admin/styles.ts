@@ -195,6 +195,17 @@ export const erpStyles = `
   .check { display: flex; align-items: center; gap: 8px; }
   .check input { width: auto; }
   .storage-hint { color: #687366; font-weight: 800; }
+  .wax-settings-details { padding: 0; gap: 0; overflow: hidden; }
+  .wax-settings-details summary {
+    padding: 14px 18px;
+    cursor: pointer;
+    color: #0d3020;
+    font-size: 1rem;
+    font-weight: 900;
+    list-style-position: inside;
+  }
+  .wax-settings-details[open] summary { border-bottom: 1px solid #edf1e9; }
+  .wax-settings-body { display: grid; gap: 12px; padding: 16px 18px 18px; }
 
   .import-card { margin: 0; }
   .import-controls { align-items: end; }

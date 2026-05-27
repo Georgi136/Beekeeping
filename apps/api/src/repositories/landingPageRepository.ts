@@ -1,4 +1,4 @@
-import { PageStatus, Prisma } from '@prisma/client'
+import { PageStatus, Prisma } from '../lib/prismaClient'
 import { prisma } from '../lib/prisma'
 
 export function listLandingPages(includeDrafts = false) {

@@ -28,6 +28,7 @@ export default function ReportsPage({ reports, reportTab, reportRange, formatEur
           ['Оборот', formatEur(reports.totals.turnoverEur), formatBgn(reports.totals.turnoverEur)],
           ['Брутна печалба', formatEur(reports.totals.grossProfitEur), formatBgn(reports.totals.grossProfitEur)],
           ['Разходи', formatEur(reports.totals.expensesEur), formatBgn(reports.totals.expensesEur)],
+          ['Доплащане от размяна на восък', formatEur(reports.totals.waxSwapExtraPaymentEur || 0), formatBgn(reports.totals.waxSwapExtraPaymentEur || 0)],
           ['Нетна печалба', formatEur(reports.totals.netProfitEur), formatBgn(reports.totals.netProfitEur)]
         ]}
       />

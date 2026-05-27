@@ -1,0 +1,8 @@
+ALTER TABLE "ErpProduct"
+ADD COLUMN IF NOT EXISTS "paidWaxExchangeEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "paidFoundationUnitsPerWaxKg" DECIMAL(12, 3),
+ADD COLUMN IF NOT EXISTS "paidExchangeExtraPricePerUnitEur" DECIMAL(12, 2);
+
+ALTER TABLE "ErpWaxTransaction"
+ADD COLUMN IF NOT EXISTS "swapCalculationMode" TEXT NOT NULL DEFAULT 'STANDARD_SWAP',
+ADD COLUMN IF NOT EXISTS "extraPaymentPerFoundationEur" DECIMAL(12, 2);

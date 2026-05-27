@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import { Prisma } from '@prisma/client'
+import { Prisma, type ErpProduct } from '../../lib/prismaClient'
 import XLSX from 'xlsx'
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
@@ -35,6 +35,69 @@ function roundExchangeQuantity(value: Prisma.Decimal, mode: string | null | unde
     case 'FLOOR':
     default:
       return qty(Math.floor(numeric))
+  }
+}
+
+function normalizeSwapCalculationMode(value: unknown) {
+  return value === 'PAID_SWAP' || value === 'SWAP_WITH_EXTRA_PAYMENT' ? 'PAID_SWAP' : 'STANDARD_SWAP'
+}
+
+function resolveSwapCalculation(body: Request['body'], transactionType: string, foundationProduct: ErpProduct | null, waxReceivedKg: Prisma.Decimal) {
+  const swapCalculationMode = transactionType === 'SWAP' ? normalizeSwapCalculationMode(body.swapCalculationMode) : 'STANDARD_SWAP'
+
+  if (transactionType !== 'SWAP') {
+    return {
+      swapCalculationMode,
+      foundationGivenKg: qty(0),
+      ratioUsed: null as Prisma.Decimal | null,
+      roundingModeUsed: null as string | null,
+      suggestedFoundationGivenKg: null as Prisma.Decimal | null,
+      extraPaymentPerFoundationEur: null as Prisma.Decimal | null,
+      extraPayment: money(0)
+    }
+  }
+
+  if (!foundationProduct) throw new AppError(400, 'Изберете валидни восъчни основи.')
+  if (!foundationProduct.active || foundationProduct.category !== 'WAX_FOUNDATIONS') {
+    throw new AppError(400, 'Избраните основи не са активен продукт от категория "Восъчни основи".')
+  }
+  if (waxReceivedKg.lte(0)) throw new AppError(400, 'Въведете положително количество восък.')
+
+  const ratioUsed = swapCalculationMode === 'PAID_SWAP'
+    ? foundationProduct.paidFoundationUnitsPerWaxKg
+    : foundationProduct.foundationUnitsPerWaxKg
+  const extraPaymentPerFoundationEur = swapCalculationMode === 'PAID_SWAP'
+    ? foundationProduct.paidExchangeExtraPricePerUnitEur
+    : null
+  const ratio = ratioUsed ? qty(ratioUsed) : null
+  const paidExtraPrice = extraPaymentPerFoundationEur ? money(extraPaymentPerFoundationEur) : null
+
+  if (swapCalculationMode === 'STANDARD_SWAP') {
+    if (!foundationProduct.waxExchangeEnabled || !ratio || ratio.lte(0)) {
+      throw new AppError(400, 'Избраните основи не са настроени за стандартна размяна на восък.')
+    }
+  } else if (!foundationProduct.paidWaxExchangeEnabled || !ratio || ratio.lte(0) || !paidExtraPrice || paidExtraPrice.lte(0)) {
+    throw new AppError(400, 'Избраните основи не са настроени за размяна с доплащане.')
+  }
+
+  const roundingModeUsed = foundationProduct.exchangeRoundingMode
+  const suggestedFoundationGivenKg = roundExchangeQuantity(waxReceivedKg.mul(ratio), roundingModeUsed)
+  const requestedFoundationGivenKg = body.foundationGivenKg !== undefined && body.foundationGivenKg !== null
+    ? qty(body.foundationGivenKg)
+    : qty(0)
+  const foundationGivenKg = requestedFoundationGivenKg.gt(0) ? requestedFoundationGivenKg : suggestedFoundationGivenKg
+  if (foundationGivenKg.lte(0)) throw new AppError(400, 'Въведете положително количество основи.')
+
+  return {
+    swapCalculationMode,
+    foundationGivenKg,
+    ratioUsed: ratio,
+    roundingModeUsed,
+    suggestedFoundationGivenKg,
+    extraPaymentPerFoundationEur: paidExtraPrice,
+    extraPayment: swapCalculationMode === 'PAID_SWAP'
+      ? money(foundationGivenKg.mul(paidExtraPrice || 0))
+      : money(body.extraPaymentEur || 0)
   }
 }
 
@@ -368,6 +431,9 @@ export async function createErpProduct(req: Request, res: Response) {
         active: req.body.active,
         waxExchangeEnabled: req.body.category === 'WAX_FOUNDATIONS' ? Boolean(req.body.waxExchangeEnabled) : false,
         foundationUnitsPerWaxKg: req.body.category === 'WAX_FOUNDATIONS' && req.body.foundationUnitsPerWaxKg !== null && req.body.foundationUnitsPerWaxKg !== undefined ? qty(req.body.foundationUnitsPerWaxKg) : null,
+        paidWaxExchangeEnabled: req.body.category === 'WAX_FOUNDATIONS' ? Boolean(req.body.paidWaxExchangeEnabled) : false,
+        paidFoundationUnitsPerWaxKg: req.body.category === 'WAX_FOUNDATIONS' && req.body.paidFoundationUnitsPerWaxKg !== null && req.body.paidFoundationUnitsPerWaxKg !== undefined ? qty(req.body.paidFoundationUnitsPerWaxKg) : null,
+        paidExchangeExtraPricePerUnitEur: req.body.category === 'WAX_FOUNDATIONS' && req.body.paidExchangeExtraPricePerUnitEur !== null && req.body.paidExchangeExtraPricePerUnitEur !== undefined ? money(req.body.paidExchangeExtraPricePerUnitEur) : null,
         exchangeRoundingMode: req.body.exchangeRoundingMode || 'FLOOR',
         notes: req.body.notes
       }
@@ -415,6 +481,9 @@ export async function updateErpProduct(req: Request, res: Response) {
         active: req.body.active,
         waxExchangeEnabled: req.body.category === 'WAX_FOUNDATIONS' ? Boolean(req.body.waxExchangeEnabled) : false,
         foundationUnitsPerWaxKg: req.body.category === 'WAX_FOUNDATIONS' && req.body.foundationUnitsPerWaxKg !== null && req.body.foundationUnitsPerWaxKg !== undefined ? qty(req.body.foundationUnitsPerWaxKg) : null,
+        paidWaxExchangeEnabled: req.body.category === 'WAX_FOUNDATIONS' ? Boolean(req.body.paidWaxExchangeEnabled) : false,
+        paidFoundationUnitsPerWaxKg: req.body.category === 'WAX_FOUNDATIONS' && req.body.paidFoundationUnitsPerWaxKg !== null && req.body.paidFoundationUnitsPerWaxKg !== undefined ? qty(req.body.paidFoundationUnitsPerWaxKg) : null,
+        paidExchangeExtraPricePerUnitEur: req.body.category === 'WAX_FOUNDATIONS' && req.body.paidExchangeExtraPricePerUnitEur !== null && req.body.paidExchangeExtraPricePerUnitEur !== undefined ? money(req.body.paidExchangeExtraPricePerUnitEur) : null,
         exchangeRoundingMode: req.body.exchangeRoundingMode || 'FLOOR',
         notes: req.body.notes
       }
@@ -885,29 +954,16 @@ export async function createWaxTransaction(req: Request, res: Response) {
   const creatorId = userId(req)
   const transactionType = req.body.transactionType || 'BUY'
   const waxReceivedKg = qty(req.body.waxReceivedKg)
-  const foundationGivenKg = transactionType === 'SWAP' ? qty(req.body.foundationGivenKg) : qty(0)
-  const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
-  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
-  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
-  const extraPayment = transactionType === 'SWAP' ? money(req.body.extraPaymentEur || 0) : money(0)
-  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
   const foundationProductId = transactionType === 'SWAP' && req.body.foundationProductId ? Number(req.body.foundationProductId) : null
   const allowNegative = role(req) === 'ADMIN' && Boolean(req.body.allowNegativeStock)
   const foundationProduct = foundationProductId ? await prisma.erpProduct.findUnique({ where: { id: foundationProductId } }) : null
-  const ratioUsed = transactionType === 'SWAP' && foundationProduct?.foundationUnitsPerWaxKg ? qty(foundationProduct.foundationUnitsPerWaxKg) : null
-  const roundingModeUsed = transactionType === 'SWAP' && foundationProduct ? foundationProduct.exchangeRoundingMode : null
-  const suggestedFoundationGivenKg = ratioUsed ? roundExchangeQuantity(waxReceivedKg.mul(ratioUsed), roundingModeUsed) : null
-
-  if (transactionType === 'SWAP' && foundationGivenKg.gt(0) && !foundationProductId) {
-    throw new AppError(400, 'РР·Р±РµСЂРµС‚Рµ РІРѕСЃСЉС‡РЅРё РѕСЃРЅРѕРІРё РѕС‚ СЃРєР»Р°РґР°.') 
-  }
-
-  if (transactionType === 'SWAP') {
-    if (!foundationProduct) throw new AppError(400, 'Изберете валидни восъчни основи.')
-    if (!foundationProduct.active || foundationProduct.category !== 'WAX_FOUNDATIONS' || !foundationProduct.waxExchangeEnabled || !foundationProduct.foundationUnitsPerWaxKg) {
-      throw new AppError(400, 'Избраните основи не са настроени за размяна на восък.')
-    }
-  }
+  const swap = resolveSwapCalculation(req.body, transactionType, foundationProduct, waxReceivedKg)
+  const foundationGivenKg = swap.foundationGivenKg
+  const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
+  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
+  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
+  const extraPayment = swap.extraPayment
+  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
 
   if (foundationProductId && foundationGivenKg.gt(0)) {
     await assertStock(foundationProductId, foundationGivenKg.neg(), allowNegative)
@@ -926,9 +982,11 @@ export async function createWaxTransaction(req: Request, res: Response) {
         foundationGivenKg,
         foundationPricePerKgEur: foundationPricePerKg,
         foundationValueEur: foundationValue,
-        suggestedFoundationGivenKg,
-        foundationUnitsPerWaxKgUsed: ratioUsed,
-        exchangeRoundingModeUsed: roundingModeUsed,
+        swapCalculationMode: swap.swapCalculationMode,
+        suggestedFoundationGivenKg: swap.suggestedFoundationGivenKg,
+        foundationUnitsPerWaxKgUsed: swap.ratioUsed,
+        exchangeRoundingModeUsed: swap.roundingModeUsed,
+        extraPaymentPerFoundationEur: swap.extraPaymentPerFoundationEur,
         extraPaymentEur: extraPayment,
         balanceEur: balance,
         foundationProductId,
@@ -993,29 +1051,16 @@ export async function updateWaxTransaction(req: Request, res: Response) {
   if (existing.status === 'CANCELED') throw new AppError(400, 'Отказана сделка с восък не може да се редактира.')
   const transactionType = req.body.transactionType || 'BUY'
   const waxReceivedKg = qty(req.body.waxReceivedKg)
-  const foundationGivenKg = transactionType === 'SWAP' ? qty(req.body.foundationGivenKg) : qty(0)
-  const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
-  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
-  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
-  const extraPayment = transactionType === 'SWAP' ? money(req.body.extraPaymentEur || 0) : money(0)
-  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
   const foundationProductId = transactionType === 'SWAP' && req.body.foundationProductId ? Number(req.body.foundationProductId) : null
   const allowNegative = role(req) === 'ADMIN' && Boolean(req.body.allowNegativeStock)
   const foundationProduct = foundationProductId ? await prisma.erpProduct.findUnique({ where: { id: foundationProductId } }) : null
-  const ratioUsed = transactionType === 'SWAP' && foundationProduct?.foundationUnitsPerWaxKg ? qty(foundationProduct.foundationUnitsPerWaxKg) : null
-  const roundingModeUsed = transactionType === 'SWAP' && foundationProduct ? foundationProduct.exchangeRoundingMode : null
-  const suggestedFoundationGivenKg = ratioUsed ? roundExchangeQuantity(waxReceivedKg.mul(ratioUsed), roundingModeUsed) : null
-
-  if (transactionType === 'SWAP' && foundationGivenKg.gt(0) && !foundationProductId) {
-    throw new AppError(400, 'РР·Р±РµСЂРµС‚Рµ РІРѕСЃСЉС‡РЅРё РѕСЃРЅРѕРІРё РѕС‚ СЃРєР»Р°РґР°.')
-  }
-
-  if (transactionType === 'SWAP') {
-    if (!foundationProduct) throw new AppError(400, 'Изберете валидни восъчни основи.')
-    if (!foundationProduct.active || foundationProduct.category !== 'WAX_FOUNDATIONS' || !foundationProduct.waxExchangeEnabled || !foundationProduct.foundationUnitsPerWaxKg) {
-      throw new AppError(400, 'Избраните основи не са настроени за размяна на восък.')
-    }
-  }
+  const swap = resolveSwapCalculation(req.body, transactionType, foundationProduct, waxReceivedKg)
+  const foundationGivenKg = swap.foundationGivenKg
+  const waxValue = money(waxReceivedKg.mul(req.body.waxPricePerKgEur))
+  const foundationPricePerKg = transactionType === 'SWAP' ? money(req.body.foundationPricePerKgEur) : money(0)
+  const foundationValue = money(foundationGivenKg.mul(foundationPricePerKg))
+  const extraPayment = swap.extraPayment
+  const balance = money(waxValue.add(extraPayment).sub(foundationValue))
 
   if (foundationProductId && foundationGivenKg.gt(0)) {
     if (foundationProductId === existing.foundationProductId) {
@@ -1084,9 +1129,11 @@ export async function updateWaxTransaction(req: Request, res: Response) {
         foundationGivenKg,
         foundationPricePerKgEur: foundationPricePerKg,
         foundationValueEur: foundationValue,
-        suggestedFoundationGivenKg,
-        foundationUnitsPerWaxKgUsed: ratioUsed,
-        exchangeRoundingModeUsed: roundingModeUsed,
+        swapCalculationMode: swap.swapCalculationMode,
+        suggestedFoundationGivenKg: swap.suggestedFoundationGivenKg,
+        foundationUnitsPerWaxKgUsed: swap.ratioUsed,
+        exchangeRoundingModeUsed: swap.roundingModeUsed,
+        extraPaymentPerFoundationEur: swap.extraPaymentPerFoundationEur,
         extraPaymentEur: extraPayment,
         balanceEur: balance,
         foundationProductId,
@@ -1142,7 +1189,7 @@ export async function deleteWaxTransaction(req: Request, res: Response) {
 
 export async function erpReports(req: Request, res: Response) {
   const range = reportRange(req)
-  const [daily, monthly, salesByProduct, expensesByCategory, waxTransactions, inventoryMovements, lowStockProducts, salesAgg, expensesAgg] = await Promise.all([
+  const [daily, monthly, salesByProduct, expensesByCategory, waxTransactions, inventoryMovements, lowStockProducts, salesAgg, expensesAgg, waxExtraPaymentAgg] = await Promise.all([
     prisma.$queryRaw<Array<{ day: Date; turnover_eur: Prisma.Decimal; profit_eur: Prisma.Decimal; sold_quantity: Prisma.Decimal; sold_lines: bigint; expenses_eur: Prisma.Decimal }>>`
       SELECT
         days.day,
@@ -1200,7 +1247,8 @@ export async function erpReports(req: Request, res: Response) {
     prisma.erpInventoryMovement.findMany({ where: { createdAt: range }, include: { product: true }, orderBy: { createdAt: 'desc' } }),
     prisma.erpProduct.findMany({ where: { active: true, stockQuantity: { lte: prisma.erpProduct.fields.minStockQuantity } }, orderBy: { stockQuantity: 'asc' } }),
     prisma.erpSale.aggregate({ where: { status: 'ACTIVE', saleDate: range }, _sum: { totalEur: true, profitEur: true } }),
-    prisma.erpExpense.aggregate({ where: { status: 'ACTIVE', expenseDate: range }, _sum: { amountEur: true } })
+    prisma.erpExpense.aggregate({ where: { status: 'ACTIVE', expenseDate: range }, _sum: { amountEur: true } }),
+    prisma.erpWaxTransaction.aggregate({ where: { status: 'ACTIVE', transactionDate: range, swapCalculationMode: 'PAID_SWAP' }, _sum: { extraPaymentEur: true } })
   ])
 
   const grossProfit = salesAgg._sum.profitEur || new Prisma.Decimal(0)
@@ -1218,6 +1266,7 @@ export async function erpReports(req: Request, res: Response) {
       turnoverEur: salesAgg._sum.totalEur || 0,
       grossProfitEur: grossProfit,
       expensesEur: expenses,
+      waxSwapExtraPaymentEur: waxExtraPaymentAgg._sum.extraPaymentEur || 0,
       netProfitEur: grossProfit.sub(expenses)
     }
   }))

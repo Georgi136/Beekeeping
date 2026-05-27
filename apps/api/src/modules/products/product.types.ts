@@ -1,4 +1,4 @@
-import { type ProductStatus, type Prisma } from '@prisma/client'
+import { type ProductStatus, type Prisma } from '../../lib/prismaClient'
 import { toNumber } from '../../utils/money'
 import { productInclude } from './product.repository'
 

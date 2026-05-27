@@ -19,6 +19,9 @@ interface ProductForm {
   active: boolean
   waxExchangeEnabled: boolean
   foundationUnitsPerWaxKg: string
+  paidWaxExchangeEnabled: boolean
+  paidFoundationUnitsPerWaxKg: string
+  paidExchangeExtraPricePerUnitEur: string
   exchangeRoundingMode: string
   notes: string
 }
@@ -29,7 +32,7 @@ interface ProductsPageProps {
   storageStatus: string
   showProductEditor: boolean
   editingProductId: number | null
-  editorRef?: RefObject<HTMLFormElement | null>
+  editorRef?: RefObject<HTMLFormElement>
   productForm: ProductForm
   productImportFile: File | null
   productImportRows: ProductImportRow[]
@@ -103,20 +106,27 @@ export default function ProductsPage({
             <label>Минимум<input type="number" step="0.001" min="0" value={productForm.minStockQuantity} onChange={(e) => onProductFormChange({ ...productForm, minStockQuantity: e.target.value })} /></label>
             <label className="check"><input type="checkbox" checked={productForm.active} onChange={(e) => onProductFormChange({ ...productForm, active: e.target.checked })} /> Активен</label>
             {productForm.category === 'WAX_FOUNDATIONS' && (
-              <section className="wide-field erp-card">
-                <h2>Настройки за размяна на восък</h2>
-                <label className="check"><input type="checkbox" checked={productForm.waxExchangeEnabled} onChange={(e) => onProductFormChange({ ...productForm, waxExchangeEnabled: e.target.checked })} /> Участва в размяна на восък</label>
-                <div className="two">
-                  <label>Брой основи за 1 кг восък<input type="number" step="0.001" min="0" value={productForm.foundationUnitsPerWaxKg} onChange={(e) => onProductFormChange({ ...productForm, foundationUnitsPerWaxKg: e.target.value })} /></label>
-                  <label>Закръгляне<select value={productForm.exchangeRoundingMode} onChange={(e) => onProductFormChange({ ...productForm, exchangeRoundingMode: e.target.value })}>
-                    <option value="FLOOR">надолу</option>
-                    <option value="ROUND">нормално</option>
-                    <option value="CEIL">нагоре</option>
-                    <option value="NONE">без закръгляне</option>
-                  </select></label>
+              <details className="wide-field erp-card wax-settings-details">
+                <summary>Настройки за размяна на восък</summary>
+                <div className="wax-settings-body">
+                  <label className="check"><input type="checkbox" checked={productForm.waxExchangeEnabled} onChange={(e) => onProductFormChange({ ...productForm, waxExchangeEnabled: e.target.checked })} /> Участва в стандартна размяна</label>
+                  <div className="two">
+                    <label>Основи за 1 кг восък<input type="number" step="0.001" min="0" value={productForm.foundationUnitsPerWaxKg} onChange={(e) => onProductFormChange({ ...productForm, foundationUnitsPerWaxKg: e.target.value })} /></label>
+                    <label>Закръгляне<select value={productForm.exchangeRoundingMode} onChange={(e) => onProductFormChange({ ...productForm, exchangeRoundingMode: e.target.value })}>
+                      <option value="FLOOR">надолу</option>
+                      <option value="ROUND">нормално</option>
+                      <option value="CEIL">нагоре</option>
+                      <option value="NONE">без закръгляне</option>
+                    </select></label>
+                  </div>
+                  <label className="check"><input type="checkbox" checked={productForm.paidWaxExchangeEnabled} onChange={(e) => onProductFormChange({ ...productForm, paidWaxExchangeEnabled: e.target.checked })} /> Участва в размяна с доплащане</label>
+                  <div className="two">
+                    <label>Основи за 1 кг восък с доплащане<input type="number" step="0.001" min="0" value={productForm.paidFoundationUnitsPerWaxKg} onChange={(e) => onProductFormChange({ ...productForm, paidFoundationUnitsPerWaxKg: e.target.value })} /></label>
+                    <label>Доплащане на 1 основа EUR<input type="number" step="0.01" min="0" value={productForm.paidExchangeExtraPricePerUnitEur} onChange={(e) => onProductFormChange({ ...productForm, paidExchangeExtraPricePerUnitEur: e.target.value })} /></label>
+                  </div>
+                  <div className="storage-hint">Пример: 5 кг восък × 12 основи = 60 основи. 60 × 0.13 EUR = 7.80 EUR доплащане.</div>
                 </div>
-                <div className="storage-hint">Пример: ако за 1 кг восък се дават 12 основи, въведете 12.</div>
-              </section>
+              </details>
             )}
             <label className="wide-field">Бележки<textarea value={productForm.notes} onChange={(e) => onProductFormChange({ ...productForm, notes: e.target.value })} /></label>
             <button className="erp-btn primary" disabled={loading}>{commonText.save}</button>
