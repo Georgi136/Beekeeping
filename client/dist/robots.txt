@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /cart
-Disallow: /checkout
-
-Sitemap: https://www.sakimed.com/sitemap.xml
-Host: https://www.sakimed.com/
