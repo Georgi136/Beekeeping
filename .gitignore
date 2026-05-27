@@ -1,3 +1,14 @@
 node_modules
-client/dist/build7.zip
+dist
+build
+.env
+.env.*
+!.env.example
+uploads
+*.tsbuildinfo
+*.rar
+*.7z
+.DS_Store
+coverage
+.cache
 dev-server*.log

@@ -7,20 +7,24 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
-    "build": "npm run build:server && npm run build:client",
-    "build:client": "cd client && npm run build",
-    "build:server": "cd server && npm run build",
-    "start": "cd server && npm start",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:admin\" \"npm run dev:server\"",
+    "dev:client": "cd apps/web && npm run dev",
+    "dev:admin": "cd apps/admin && npm run dev",
+    "dev:server": "cd apps/api && npm run dev",
+    "build": "npm run build:server && npm run build:client && npm run build:admin",
+    "build:client": "cd apps/web && npm run build",
+    "build:admin": "cd apps/admin && npm run build",
+    "build:server": "cd apps/api && npm run build",
+    "start": "cd apps/api && npm start",
+    "install:all": "npm install && cd apps/web && npm install && cd ../admin && npm install && cd ../api && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "prisma": "^5.22.0",
     "xlsx": "^0.18.5"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "all": "^0.0.0"
   }
 }

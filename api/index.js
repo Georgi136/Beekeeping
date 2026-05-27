@@ -1,4 +1,4 @@
-const app = require('../server/dist/app').default
+const app = require('../apps/api/dist/app').default
 
 function normalizePathParam(value) {
   if (Array.isArray(value)) return value.join('/')

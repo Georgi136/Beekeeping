@@ -27,7 +27,7 @@ npm run build
 Run database migrations before serving a production build:
 
 ```bash
-cd server
+cd apps/api
 npm run db:deploy
 ```
 

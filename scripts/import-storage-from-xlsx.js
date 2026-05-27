@@ -1,11 +1,12 @@
 const fs = require('fs')
 const path = require('path')
 const XLSX = require('xlsx')
-const { PrismaClient, Prisma } = require('../server/node_modules/@prisma/client')
+const { PrismaClient, Prisma } = require('@prisma/client')
 
-const serverDir = path.resolve(__dirname, '..', 'server')
-const envPath = path.join(serverDir, '.env')
-if (fs.existsSync(envPath)) {
+const apiDir = path.resolve(__dirname, '..', 'apps', 'api')
+const legacyServerDir = path.resolve(__dirname, '..', 'server')
+for (const envPath of [path.join(apiDir, '.env'), path.join(legacyServerDir, '.env')]) {
+  if (!fs.existsSync(envPath)) continue
   for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('#')) continue
