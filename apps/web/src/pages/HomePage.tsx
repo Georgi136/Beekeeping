@@ -6,11 +6,20 @@ import SEO from '../components/SEO'
 import { useEffect } from 'react'
 import ReactGA from 'react-ga4'
 import { defaultDescription, localBusinessJsonLd, websiteJsonLd } from '../seo'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function HomePage() {
+  const { homepageMeta } = useLanguage()
   useEffect(() => {
     ReactGA.send({ hitType: 'pageview', page: window.location.pathname + window.location.search })
   }, [])
+  const sections = {
+    hero: <Hero />,
+    products: <Products />,
+    about: <About />,
+    contact: <Contact />
+  }
+  const order = (homepageMeta.sectionOrder || 'hero,about,products,contact').split(',') as Array<keyof typeof sections>
 
   return (
     <>
@@ -20,10 +29,7 @@ export default function HomePage() {
         path="/"
         jsonLd={[localBusinessJsonLd(), websiteJsonLd()]}
       />
-      <Hero />
-      <About />
-      <Products />
-      <Contact />
+      {order.filter((key) => sections[key] && homepageMeta[`${key}.visible`] !== 'false').map((key) => <div key={key}>{sections[key]}</div>)}
     </>
   )
 }

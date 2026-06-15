@@ -13,6 +13,7 @@ import categoryRoutes from './routes/categories'
 import promotionRoutes from './routes/promotions'
 import landingPageRoutes from './routes/landingPages'
 import erpRoutes from './modules/erp/erp.routes'
+import { adminSiteSettingsRouter, publicSiteSettingsRouter } from './modules/site-settings/siteSettings.routes'
 import { uploadsDir } from './paths'
 import { env } from './config/env'
 import { errorHandler } from './middleware/errorHandler'
@@ -58,8 +59,10 @@ app.use('/api/orders', ordersRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/promotions', promotionRoutes)
 app.use('/api/landing-pages', landingPageRoutes)
+app.use('/api/site-settings', publicSiteSettingsRouter)
 app.use('/api/auth', authRoutes)
 app.use('/api/admin/erp', erpRoutes)
+app.use('/api/admin/site-settings', adminSiteSettingsRouter)
 app.use('/api/admin', adminRoutes)
 
 app.get('/api/health', (_req, res) => {

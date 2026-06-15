@@ -71,3 +71,18 @@ export function websiteJsonLd() {
     }
   }
 }
+
+export function propolisMehlemJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: 'Прополисов мехлем САКИ',
+    description:
+      'Прополисов мехлем САКИ по семейна рецепта - локална натурална грижа за суха, раздразнена и проблемна кожа от семейна пчеларска фирма с 20+ години опит.',
+    brand: {
+      '@type': 'Brand',
+      name: 'САКИ'
+    },
+    image: [absoluteUrl('/assets/photos/propolisov-mehlem-hero.jpg')]
+  }
+}

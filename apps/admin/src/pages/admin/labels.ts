@@ -39,12 +39,20 @@ export const tabLabels: Array<[Tab, string]> = [
   ['dashboard', 'Табло'],
   ['sales', 'Продажби'],
   ['products', 'Склад'],
+  ['inventory-logs', 'Дневник склад'],
   ['reports', 'Справки'],
   ['expenses', 'Разходи'],
   ['wax', 'Восък'],
   ['wax-ledger', 'Восъчен отчет'],
+  ['store', 'Онлайн магазин'],
+  ['store-settings', 'Настройки магазин'],
+  ['homepage', 'Начална страница'],
+  ['configuration', 'Конфигурация'],
   ['settings', 'Настройки']
 ]
+
+export const erpTabLabels = tabLabels.filter(([key]) => ['dashboard', 'sales', 'products', 'inventory-logs', 'reports', 'expenses', 'wax', 'wax-ledger', 'settings'].includes(key))
+export const storeTabLabels = tabLabels.filter(([key]) => ['store', 'homepage', 'store-settings', 'configuration'].includes(key))
 
 export const commonText = {
   requestFailed: 'Заявката не беше успешна.',

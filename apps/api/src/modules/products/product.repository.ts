@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma'
 
 export const productInclude = {
   category: true,
+  erpProduct: true,
   images: {
     orderBy: { sortOrder: 'asc' as const }
   }

@@ -12,6 +12,7 @@ import ProductDetailPage from './pages/ProductDetailPage'
 import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import SpecialPage from './pages/SpecialPage'
+import PropolisMehlemPage from './pages/PropolisMehlemPage'
 
 function AdminRedirect() {
   useEffect(() => {
@@ -34,6 +35,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/propolisov-mehlem" element={<PropolisMehlemPage />} />
               <Route path="/special/:slug" element={<SpecialPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />

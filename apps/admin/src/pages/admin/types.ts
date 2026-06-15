@@ -1,4 +1,4 @@
-export type Tab = 'dashboard' | 'sales' | 'products' | 'reports' | 'expenses' | 'wax' | 'wax-ledger' | 'settings'
+export type Tab = 'dashboard' | 'sales' | 'products' | 'inventory-logs' | 'reports' | 'expenses' | 'wax' | 'wax-ledger' | 'store' | 'store-settings' | 'homepage' | 'configuration' | 'settings'
 export type ReportTab = 'monthly' | 'daily' | 'products' | 'expenses' | 'low-stock'
 
 export interface ErpProduct {
@@ -38,6 +38,19 @@ export interface ErpSale {
   profitEur: number
   paymentMethod: string
   notes?: string | null
+}
+
+export interface InventoryMovement {
+  id: number
+  product: ErpProduct
+  movementType: string
+  quantityChange: number
+  referenceType?: string | null
+  referenceId?: number | null
+  referenceKey?: string | null
+  notes?: string | null
+  createdBy?: { name?: string | null; email: string } | null
+  createdAt: string
 }
 
 export interface Dashboard {
@@ -116,4 +129,14 @@ export interface ProductImportRow {
 
 export interface PaginatedResult<T> {
   items?: T[]
+}
+
+export interface SiteEnvironment {
+  nodeEnv: string
+  database: string
+  databaseConfigured: boolean
+  jwtConfigured: boolean
+  blobStorageConfigured: boolean
+  smtpPasswordConfigured: boolean
+  clientOrigin: string
 }

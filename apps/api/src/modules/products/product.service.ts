@@ -35,7 +35,10 @@ function mapProductInput(input: ProductInput): Prisma.ProductCreateInput {
     seoDescription: input.seoDescription || input.shortDescription || input.description.slice(0, 160),
     category: {
       connect: { id: input.categoryId }
-    }
+    },
+    erpProduct: input.erpProductId
+      ? { connect: { id: input.erpProductId } }
+      : undefined
   }
 }
 
@@ -75,7 +78,10 @@ export async function updateProductRecord(id: number, input: ProductInput) {
       ...data,
       category: {
         connect: { id: input.categoryId }
-      }
+      },
+      erpProduct: input.erpProductId
+        ? { connect: { id: input.erpProductId } }
+        : { disconnect: true }
     },
     mapImages(input.images, input.name)
   )

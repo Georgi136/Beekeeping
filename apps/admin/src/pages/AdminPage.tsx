@@ -7,11 +7,16 @@ import ProductsPage from './products/ProductsPage'
 import ReportsPage from './reports/ReportsPage'
 import SalesPage from './sales/SalesPage'
 import SettingsPage from './settings/SettingsPage'
+import ConfigurationPage from './configuration/ConfigurationPage'
+import HomepageSettingsPage from './homepage/HomepageSettingsPage'
+import InventoryLogsPage from './inventory-logs/InventoryLogsPage'
+import StoreAdminPage from './store/StoreAdminPage'
+import StoreSettingsPage from './store-settings/StoreSettingsPage'
 import WaxLedgerPage from './wax-ledger/WaxLedgerPage'
 import WaxPage from './wax/WaxPage'
-import { commonText, tabLabels } from './admin/labels'
+import { commonText, erpTabLabels, storeTabLabels } from './admin/labels'
 import { erpStyles } from './admin/styles'
-import type { Dashboard, ErpProduct, ErpSale, PaginatedResult, ProductImportRow, ReportTab, Reports, Tab, WaxSettings, WaxSummary, WaxTransaction } from './admin/types'
+import type { Dashboard, ErpProduct, ErpSale, InventoryMovement, PaginatedResult, ProductImportRow, ReportTab, Reports, SiteEnvironment, Tab, WaxSettings, WaxSummary, WaxTransaction } from './admin/types'
 
 const emptyProduct = {
   sku: '',
@@ -87,6 +92,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginForm, setLoginForm] = useState({ email: '', password: '' })
   const [tab, setTab] = useState<Tab>('dashboard')
+  const [adminArea, setAdminArea] = useState<'erp' | 'store'>('erp')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
   const saleCardRef = useRef<HTMLFormElement>(null)
@@ -95,10 +101,13 @@ export default function AdminPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null)
   const [products, setProducts] = useState<ErpProduct[]>([])
   const [sales, setSales] = useState<ErpSale[]>([])
+  const [inventoryMovements, setInventoryMovements] = useState<InventoryMovement[]>([])
   const [reports, setReports] = useState<Reports | null>(null)
   const [waxTransactions, setWaxTransactions] = useState<WaxTransaction[]>([])
   const [waxSummary, setWaxSummary] = useState<WaxSummary>(emptyWaxSummary)
   const [waxSettings, setWaxSettings] = useState<WaxSettings>({ defaultBuyPriceEur: 5 })
+  const [siteSettings, setSiteSettings] = useState<Record<string, string>>({})
+  const [siteEnvironment, setSiteEnvironment] = useState<SiteEnvironment | null>(null)
 
   const [storageSearch, setStorageSearch] = useState('')
   const [storageCategory, setStorageCategory] = useState('ALL')
@@ -178,9 +187,11 @@ export default function AdminPage() {
       adminFetch(`/api/admin/erp/reports?from=${reportRange.from}&to=${reportRange.to}`),
       adminFetch('/api/admin/erp/wax-transactions'),
       adminFetch('/api/admin/erp/wax-summary'),
-      adminFetch('/api/admin/erp/wax-settings')
+      adminFetch('/api/admin/erp/wax-settings'),
+      adminFetch('/api/admin/site-settings'),
+      adminFetch('/api/admin/erp/movements?pageSize=200')
     ])
-    const [dashboardResult, productResult, saleResult, reportResult, waxResult, waxSummaryResult, waxSettingsResult] = results
+    const [dashboardResult, productResult, saleResult, reportResult, waxResult, waxSummaryResult, waxSettingsResult, siteSettingsResult, movementResult] = results
 
     setDashboard(dashboardResult.status === 'fulfilled' ? { ...emptyDashboard, ...dashboardResult.value } : emptyDashboard)
     if (productResult.status === 'fulfilled') setProducts(Array.isArray(productResult.value) ? productResult.value : [])
@@ -194,6 +205,11 @@ export default function AdminPage() {
       setWaxSettingsForm({ defaultBuyPriceEur: String(settings.defaultBuyPriceEur) })
       if (!editingWaxId) setWaxForm((current) => ({ ...current, waxPricePerKgEur: String(settings.defaultBuyPriceEur) }))
     }
+    if (siteSettingsResult.status === 'fulfilled') {
+      setSiteSettings(siteSettingsResult.value.settings || {})
+      setSiteEnvironment(siteSettingsResult.value.environment || null)
+    }
+    if (movementResult.status === 'fulfilled') setInventoryMovements(listItems<InventoryMovement>(movementResult.value))
 
     const failed = results.find((result) => result.status === 'rejected')
     if (failed?.status === 'rejected') setStatus(failed.reason instanceof Error ? failed.reason.message : 'ERP данните не се заредиха напълно.')
@@ -423,6 +439,52 @@ export default function AdminPage() {
     }
   }
 
+  async function submitSiteSettings(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const result = await adminFetch('/api/admin/site-settings', { method: 'PUT', body: JSON.stringify({ settings: siteSettings }) })
+      setSiteSettings(result.settings || {})
+      setStatus('Настройките на сайта са запазени.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : commonText.operationFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function publishHomepage() {
+    setLoading(true)
+    try {
+      await adminFetch('/api/admin/site-settings', { method: 'PUT', body: JSON.stringify({ settings: siteSettings }) })
+      const result = await adminFetch('/api/admin/site-settings/homepage/publish', { method: 'POST' })
+      setSiteSettings(result.settings || {})
+      setStatus('Началната страница е публикувана.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : commonText.operationFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resetHomepageDraft() {
+    setLoading(true)
+    try {
+      const result = await adminFetch('/api/admin/site-settings/homepage/reset-draft', { method: 'POST' })
+      setSiteSettings(result.settings || {})
+      setStatus('Черновата е върната към публикуваната версия.')
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : commonText.operationFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function uploadHomepageImage(file: File) {
+    const asset = await adminUpload('/api/admin/media', file)
+    return asset.url as string
+  }
+
   function resetWaxForm(defaultPrice = waxSettings.defaultBuyPriceEur) {
     setEditingWaxId(null)
     setFoundationQtyManual(false)
@@ -620,8 +682,13 @@ export default function AdminPage() {
 
         {status && <p className="status">{status}</p>}
 
+        <nav className="workspace-switch">
+          <button className={adminArea === 'erp' ? 'active' : ''} onClick={() => { setAdminArea('erp'); setTab('dashboard') }}>ERP магазин</button>
+          <button className={adminArea === 'store' ? 'active' : ''} onClick={() => { setAdminArea('store'); setTab('store') }}>Уеб магазин</button>
+        </nav>
+
         <nav className="erp-tabs">
-          {tabLabels.map(([key, label]) => (
+          {(adminArea === 'erp' ? erpTabLabels : storeTabLabels).map(([key, label]) => (
             <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>{label}</button>
           ))}
         </nav>
@@ -703,6 +770,8 @@ export default function AdminPage() {
           />
         )}
 
+        {tab === 'inventory-logs' && <InventoryLogsPage movements={inventoryMovements} />}
+
         {tab === 'reports' && reports && (
           <ReportsPage
             reports={reports}
@@ -759,6 +828,10 @@ export default function AdminPage() {
         )}
 
         {tab === 'wax-ledger' && <WaxLedgerPage waxSummary={waxSummary} waxTransactions={waxTransactions} formatEur={eur} />}
+        {tab === 'store' && <StoreAdminPage adminFetch={adminFetch} onStatus={setStatus} onUploadImage={uploadHomepageImage} />}
+        {tab === 'store-settings' && <StoreSettingsPage settings={siteSettings} onSettingsChange={setSiteSettings} onSave={submitSiteSettings} loading={loading} />}
+        {tab === 'homepage' && <HomepageSettingsPage settings={siteSettings} adminFetch={adminFetch} onSettingsChange={setSiteSettings} onSave={submitSiteSettings} onPublish={publishHomepage} onResetDraft={resetHomepageDraft} onUploadImage={uploadHomepageImage} loading={loading} />}
+        {tab === 'configuration' && <ConfigurationPage settings={siteSettings} environment={siteEnvironment} onSettingsChange={setSiteSettings} onSave={submitSiteSettings} loading={loading} />}
         {tab === 'settings' && <SettingsPage waxSettingsForm={waxSettingsForm} onWaxSettingsFormChange={setWaxSettingsForm} onSubmitWaxSettings={submitWaxSettings} loading={loading} />}
       </div>
       <style>{erpStyles}</style>

@@ -1,0 +1,93 @@
+export const homepageSettingKeys = [
+  'heroImageUrl',
+  'heroTitle',
+  'heroSubtitle',
+  'heroCtaHoney',
+  'heroCtaEquipment',
+  'heroCtaHoneyLink',
+  'heroCtaEquipmentLink',
+  'aboutImageUrl',
+  'aboutTitle',
+  'aboutSubtitle',
+  'storyTitle',
+  'storyText1',
+  'storyText2',
+  'apiariesTitle',
+  'apiariesText1',
+  'apiariesText2',
+  'certificationTitle',
+  'certificationText1',
+  'certificationText2',
+  'productsTitle',
+  'productsSubtitle',
+  'productsCta',
+  'productsCtaButton',
+  'productsCtaLink',
+  'contactTitle',
+  'contactSubtitle',
+  'addressValue',
+  'phoneValue',
+  'emailValue',
+  'websiteValue',
+  'facebookValue',
+  'workingHoursWeekday',
+  'workingHoursSaturday',
+  'footerTagline'
+] as const
+
+export const homepageSectionKeys = ['hero', 'products', 'about', 'contact'] as const
+
+export const operationalSettingKeys = [
+  'siteUrl',
+  'supportEmail',
+  'orderNotificationEmail',
+  'smtpHost',
+  'smtpPort',
+  'smtpUser',
+  'smtpFrom',
+  'smtpSecure'
+] as const
+
+export const storefrontSettingKeys = [
+  'storeName',
+  'siteUrl',
+  'enabled',
+  'currency',
+  'locale',
+  'supportEmail',
+  'supportPhone',
+  'orderNotificationEmail',
+  'minimumOrderAmount',
+  'flatShippingFee',
+  'freeShippingThreshold',
+  'pickupEnabled',
+  'courierEnabled',
+  'cashOnDeliveryEnabled',
+  'bankTransferEnabled',
+  'cardPaymentEnabled',
+  'inventoryTrackingEnabled',
+  'allowOutOfStockOrders',
+  'orderSuccessMessage',
+  'announcementEnabled',
+  'announcementText',
+  'facebookUrl',
+  'instagramUrl',
+  'termsUrl',
+  'privacyUrl'
+] as const
+
+export const editableSettingKeys = [
+  ...homepageSettingKeys.flatMap((key) => [`homepage.bg.${key}`, `homepage.en.${key}`]),
+  ...homepageSettingKeys.flatMap((key) => [`homepageDraft.bg.${key}`, `homepageDraft.en.${key}`]),
+  ...homepageSectionKeys.flatMap((key) => [`homepage.meta.${key}.visible`, `homepageDraft.meta.${key}.visible`]),
+  'homepage.meta.products.featuredIds',
+  'homepage.meta.products.limit',
+  'homepage.meta.sectionOrder',
+  'homepage.meta.publishedAt',
+  'homepageDraft.meta.sectionOrder',
+  'homepageDraft.meta.products.featuredIds',
+  'homepageDraft.meta.products.limit',
+  'homepageDraft.meta.updatedAt',
+  ...operationalSettingKeys.map((key) => `technical.${key}`),
+  ...storefrontSettingKeys.map((key) => `store.${key}`)
+]

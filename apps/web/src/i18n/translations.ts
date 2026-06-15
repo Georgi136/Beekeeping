@@ -7,7 +7,7 @@ export const translations = {
     
     // Hero
     heroTitle: "Пчеларски магазин САКИ",
-    heroSubtitle: "Натурален мед от собствени пчелини в Долистово и Коркина, пчеларски инвентар и практични съвети от семейство с над 20 години опит.",
+    heroSubtitle: "Семеен пчеларски магазин в Дупница с над 20 години опит. Натурален мед от собствени пчелини, пчелни продукти и надеждно оборудване за пчелари.",
     heroCtaProducts: "Разгледайте продуктите",
     heroCtaContact: "Свържете се с нас",
     heroCtaHoney: "Пчелни продукти",
@@ -98,7 +98,7 @@ export const translations = {
     
     // Hero
     heroTitle: "SAKI Beekeeping Shop",
-    heroSubtitle: "Natural honey from our own apiaries in Dolistovo and Korkina, beekeeping equipment, and practical advice from a family with over 20 years of experience.",
+    heroSubtitle: "A family-run beekeeping shop in Dupnitsa with over 20 years of experience. Natural honey from our own apiaries, bee products, and dependable equipment for beekeepers.",
     heroCtaProducts: "Browse Products",
     heroCtaContact: "Contact Us",
     heroCtaHoney: "Bee Products",

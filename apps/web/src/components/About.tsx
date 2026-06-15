@@ -1,7 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function About() {
-  const { t, language } = useLanguage()
+  const { t, language, homepageSettings } = useLanguage()
 
   return (
     <section id="about" className="section about">
@@ -13,7 +13,7 @@ export default function About() {
 
         <div className="about-hero-image">
           <img 
-            src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
+            src={homepageSettings.aboutImageUrl || 'https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'}
             alt={language === 'bg' ? 'Семейна пчелна ферма САКИ в Долистово и Коркина - натурален пчелен мед' : 'SAKI family bee farm in Dolistovo and Korkina - natural honey'} 
           />
         </div>

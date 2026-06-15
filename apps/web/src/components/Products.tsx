@@ -1,180 +1,109 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { apiUrl, resolveProductImage } from '../config'
 import { useLanguage } from '../i18n/LanguageContext'
+import ProductCard from './ProductCard'
 
 interface Product {
   id: number
+  slug: string
   name: string
-  description: string
-  icon: string
+  price: number
+  salePrice?: number | null
   image: string
+  featured?: boolean
 }
 
-const PLACEHOLDER_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 420 280%22%3E%3Crect width=%22420%22 height=%22280%22 fill=%22%23f8fafc%22/%3E%3Ctext x=%22210%22 y=%22140%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%2220%22 fill=%22%2390a4ae%22%3EПродукт%3C/text%3E%3C/svg%3E'
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: 'Кошери и рамки',
-    description: 'Кошери Дадан-Блат и Лангстрот, рамки, восъчни основи и части за поддръжка на пчелина',
-    icon: '🏠',
-    image: PLACEHOLDER_IMAGE
-  },
-  {
-    id: 2,
-    name: 'Защитно облекло',
-    description: 'Пчеларски костюми, ръкавици, було и практични средства за спокойна работа',
-    icon: '👕',
-    image: PLACEHOLDER_IMAGE
-  },
-  {
-    id: 3,
-    name: 'Центрофуги',
-    description: 'Ръчни и електрически центрофуги за внимателно и удобно вадене на мед',
-    icon: '🍯',
-    image: PLACEHOLDER_IMAGE
-  },
-  {
-    id: 4,
-    name: 'Инвентар и инструменти',
-    description: 'Пчеларски ножове, вилици, дималки и основни инструменти за всекидневна работа',
-    icon: '🔧',
-    image: PLACEHOLDER_IMAGE
-  },
-  {
-    id: 5,
-    name: 'Подхранване за пчели',
-    description: 'Подхранващи сиропи и добавки за силни и добре поддържани пчелни семейства',
-    icon: '🫗',
-    image: PLACEHOLDER_IMAGE
-  },
-  {
-    id: 6,
-    name: 'Прополисов мехлем',
-    description: 'Натурален прополисов мехлем за локална грижа за кожата',
-    icon: '🧴',
-    image: PLACEHOLDER_IMAGE
-  }
-]
-
 export default function Products() {
-  const { t } = useLanguage()
+  const navigate = useNavigate()
+  const { t, homepageSettings, homepageMeta } = useLanguage()
+  const [products, setProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    fetch(apiUrl('/api/products'))
+      .then((response) => response.ok ? response.json() : [])
+      .then((rows) => setProducts((Array.isArray(rows) ? rows : []).map((product: Product) => ({
+        ...product,
+        image: resolveProductImage(product.image)
+      }))))
+      .catch(() => setProducts([]))
+  }, [])
+
+  const featuredProducts = useMemo(() => {
+    const ids = (homepageMeta['products.featuredIds'] || '').split(',').filter(Boolean)
+    const limit = Math.max(1, Math.min(12, Number(homepageMeta['products.limit'] || 6)))
+    const selected = ids.length
+      ? ids.map((id) => products.find((product) => String(product.id) === id)).filter((product): product is Product => Boolean(product))
+      : products.filter((product) => product.featured)
+    return (selected.length ? selected : products).slice(0, limit)
+  }, [homepageMeta, products])
 
   return (
-    <section id="products" className="section products">
+    <section id="products" className="section homepage-products">
       <div className="container">
         <h2 className="section-title">{t('productsTitle')}</h2>
-        <p className="section-subtitle">
-          {t('productsSubtitle')}
-        </p>
+        <p className="section-subtitle">{t('productsSubtitle')}</p>
 
-        <div className="products-grid">
-          {products.map((product) => (
-            <div key={product.id} className="product-card">
-              <div className="product-image">
-                <img src={product.image} alt={product.name} />
-              </div>
-              <div className="product-icon">{product.icon}</div>
-              <h3 className="product-name">{product.name}</h3>
-              <p className="product-description">{product.description}</p>
-              <a href="#contact" className="product-link">
-                {t('productInquiry')}
-              </a>
-            </div>
-          ))}
-        </div>
+        {featuredProducts.length > 0 && (
+          <div className="homepage-products-grid">
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                slug={product.slug}
+                name={product.name}
+                price={product.price}
+                salePrice={product.salePrice}
+                image={product.image}
+                onViewDetails={(idOrSlug) => navigate(`/products/${idOrSlug}`)}
+              />
+            ))}
+          </div>
+        )}
 
-        <div className="products-cta">
+        <div className="homepage-products-cta">
           <p>{t('productsCta')}</p>
-          <a href="#contact" className="btn btn-primary">{t('productsCtaButton')}</a>
+          <Link to={homepageSettings.productsCtaLink || '/products'} className="btn btn-primary">{t('productsCtaButton')}</Link>
         </div>
       </div>
 
       <style>{`
-        .products {
-          background-color: var(--color-background);
+        .homepage-products {
+          background: var(--color-background);
         }
 
-        .products-grid {
+        .homepage-products-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 2rem;
-          margin-bottom: 3rem;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 1.25rem;
+          margin: 2rem 0;
         }
 
-        .product-card {
-          background: var(--color-white);
-          padding: 2rem;
-          border-radius: 1rem;
-          box-shadow: var(--shadow-sm);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          overflow: hidden;
-        }
-
-        .product-card:hover {
-          transform: translateY(-5px);
-          box-shadow: var(--shadow-lg);
-        }
-
-        .product-image {
-          width: 100%;
-          height: 180px;
-          margin-bottom: 1rem;
+        .homepage-products-cta {
+          display: grid;
+          justify-items: center;
+          gap: 0.9rem;
+          padding: 1.5rem;
+          border: 1px solid #e5e7eb;
           border-radius: 0.5rem;
-          overflow: hidden;
-        }
-
-        .product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-
-        .product-card:hover .product-image img {
-          transform: scale(1.05);
-        }
-
-        .product-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .product-name {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--color-secondary);
-          margin-bottom: 0.75rem;
-        }
-
-        .product-description {
-          color: var(--color-text-light);
-          font-size: 0.95rem;
-          margin-bottom: 1rem;
-          line-height: 1.5;
-        }
-
-        .product-link {
-          color: var(--color-primary);
-          text-decoration: none;
-          font-weight: 500;
-          transition: color 0.3s ease;
-        }
-
-        .product-link:hover {
-          color: var(--color-primary-dark);
-        }
-
-        .products-cta {
+          background: #fff;
           text-align: center;
-          padding: 2rem;
-          background: var(--color-white);
-          border-radius: 1rem;
-          box-shadow: var(--shadow-sm);
         }
 
-        .products-cta p {
+        .homepage-products-cta p {
+          margin: 0;
           color: var(--color-text-light);
-          margin-bottom: 1rem;
-          font-size: 1.125rem;
+          font-size: 1.05rem;
+        }
+
+        .homepage-products-cta a {
+          text-decoration: none;
+        }
+
+        @media (max-width: 560px) {
+          .homepage-products-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </section>

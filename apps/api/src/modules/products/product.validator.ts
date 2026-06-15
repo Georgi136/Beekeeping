@@ -26,6 +26,7 @@ export const productUpsertSchema = z.object({
   status: z.nativeEnum(ProductStatus).default(ProductStatus.DRAFT),
   featured: z.coerce.boolean().default(false),
   categoryId: z.coerce.number().int().positive(),
+  erpProductId: z.coerce.number().int().positive().optional().nullable(),
   seoTitle: optionalString,
   seoDescription: optionalString,
   images: z.array(productImageSchema).default([])

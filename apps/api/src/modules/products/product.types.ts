@@ -17,6 +17,7 @@ export interface ProductInput {
   status: ProductStatus
   featured: boolean
   categoryId: number
+  erpProductId?: number | null
   seoTitle?: string | null
   seoDescription?: string | null
   images: Array<{
@@ -48,7 +49,8 @@ export function productToDto(product: ProductWithRelations) {
     })),
     shortDescription: product.shortDescription,
     description: product.description,
-    stock: product.stock,
+    stock: product.erpProduct ? Math.max(Math.floor(toNumber(product.erpProduct.stockQuantity) ?? 0), 0) : product.stock,
+    erpProductId: product.erpProductId,
     status: product.status,
     featured: product.featured,
     seoTitle: product.seoTitle,

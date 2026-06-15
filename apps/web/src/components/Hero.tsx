@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function Hero() {
-  const { t, language } = useLanguage()
+  const { t, language, homepageSettings } = useLanguage()
+  const heroImageUrl = homepageSettings.heroImageUrl || 'https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
 
   return (
     <section id="hero" className="hero">
       <div className="hero-background">
         <img 
-          src="https://images.pexels.com/photos/34593531/pexels-photo-34593531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
+          src={heroImageUrl}
           alt={language === 'bg' ? 'Пчеларски магазин САКИ в Дупница - натурален мед и пчеларски инвентар' : 'SAKI Beekeeping Shop in Dupnitsa - natural honey and beekeeping equipment'}
           className="hero-image"
         />
@@ -24,8 +25,8 @@ export default function Hero() {
             {t('heroSubtitle')}
           </p>
           <div className="hero-cta">
-            <Link to="/products?category=pchelni-produkti" className="btn btn-primary">{t('heroCtaHoney')}</Link>
-            <Link to="/products?category=pchelarstvo" className="btn btn-secondary">{t('heroCtaEquipment')}</Link>
+            <Link to={homepageSettings.heroCtaHoneyLink || '/products?category=pchelni-produkti'} className="btn btn-primary">{t('heroCtaHoney')}</Link>
+            <Link to={homepageSettings.heroCtaEquipmentLink || '/products?category=pchelarstvo'} className="btn btn-secondary">{t('heroCtaEquipment')}</Link>
           </div>
         </div>
         <div className="hero-visual">
