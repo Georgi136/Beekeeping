@@ -84,11 +84,13 @@ export async function updateAdminSiteSettings(req: Request, res: Response) {
     settings['homepageDraft.meta.updatedAt'] = new Date().toISOString()
   }
   const entries = Object.entries(settings)
-  await prisma.$transaction(entries.map(([key, value]) => prisma.erpSetting.upsert({
-    where: { key },
-    update: { value },
-    create: { key, value }
-  })))
+  if (entries.length > 0) {
+    await prisma.$transaction(entries.map(([key, value]) => prisma.erpSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value }
+    })))
+  }
   res.json({ settings: withDraftFallback(await getEditableSettings()) })
 }
 

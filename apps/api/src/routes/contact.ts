@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express'
+import { notifyContactMessage } from '../services/notificationService'
 
 const router = Router()
 
@@ -9,7 +10,7 @@ interface ContactFormData {
   message: string
 }
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const { name, email, phone, message } = req.body as ContactFormData
 
   // Validate required fields
@@ -31,12 +32,6 @@ router.post('/', (req: Request, res: Response) => {
     return
   }
 
-  // In a real application, you would:
-  // - Save to database
-  // - Send email notification
-  // - Integrate with CRM
-
-  // For now, we'll just log and return success
   console.log('Contact form submission:', {
     name,
     email,
@@ -44,6 +39,8 @@ router.post('/', (req: Request, res: Response) => {
     message,
     timestamp: new Date().toISOString()
   })
+
+  await notifyContactMessage({ name, email, phone, message })
 
   res.json({
     success: true,

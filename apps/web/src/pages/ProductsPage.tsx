@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import SEO from '../components/SEO'
 import { apiUrl, resolveProductImage } from '../config'
+import { useLanguage } from '../i18n/LanguageContext'
 
 interface Product {
   id: number
@@ -32,6 +33,7 @@ interface Promotion {
 
 export default function ProductsPage() {
   const navigate = useNavigate()
+  const { storefrontSettings } = useLanguage()
   const [searchParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -89,6 +91,8 @@ export default function ProductsPage() {
 
   const selectedCategoryName = categories.find((category) => category.slug === selectedCategory)?.name
   const activePromotion = promotions.find((promotion) => promotion.active && promotion.bannerText)
+  const storeDisabled = storefrontSettings.enabled === 'false'
+  const showAnnouncement = storefrontSettings.announcementEnabled === 'true' && storefrontSettings.announcementText
 
   const pageDescription = selectedCategory === 'pchelni-produkti'
     ? 'Разгледайте пчелните продукти на САКИ - натурален мед от собствени пчелини и прополис с гарантирано качество.'
@@ -111,6 +115,12 @@ export default function ProductsPage() {
             <strong>{activePromotion.title}</strong>
             <span>{activePromotion.bannerText}</span>
           </div>
+        )}
+
+        {showAnnouncement && <div className="promotion-banner">{storefrontSettings.announcementText}</div>}
+
+        {storeDisabled && (
+          <div className="error-message">Онлайн магазинът временно не приема поръчки. Можете да разгледате продуктите и да се свържете с нас.</div>
         )}
 
         {error && <div className="error-message">{error}</div>}
@@ -150,6 +160,7 @@ export default function ProductsPage() {
                     price={product.price}
                     salePrice={product.salePrice}
                     image={product.image}
+                    stock={product.stock}
                     onViewDetails={(idOrSlug) => navigate(`/products/${idOrSlug}`)}
                   />
                 ))}
@@ -266,6 +277,17 @@ export default function ProductsPage() {
           .products-grid {
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 1.5rem;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .products-page {
+            padding: 2rem 0;
+          }
+
+          .products-grid {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
           }
         }
       `}</style>

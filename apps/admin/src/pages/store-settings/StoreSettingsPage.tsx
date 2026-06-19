@@ -7,6 +7,13 @@ interface StoreSettingsPageProps {
   onSave: (event: FormEvent) => void
 }
 
+type StoreReview = {
+  name: string
+  rating: string
+  quote: string
+  source: string
+}
+
 const defaults: Record<string, string> = {
   storeName: 'SakiMed',
   currency: 'BGN',
@@ -18,7 +25,8 @@ const defaults: Record<string, string> = {
   bankTransferEnabled: 'false',
   cardPaymentEnabled: 'false',
   inventoryTrackingEnabled: 'true',
-  allowOutOfStockOrders: 'false'
+  allowOutOfStockOrders: 'false',
+  googleReviewsUrl: 'https://share.google/EwaSOYGRTzTzdyF4C'
 }
 
 const toggleFields = [
@@ -33,6 +41,32 @@ const toggleFields = [
   ['announcementEnabled', 'Информационна лента', 'Показва кратко съобщение в онлайн магазина.']
 ] as const
 
+function parseReviews(value: string): StoreReview[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((review) => ({
+      name: typeof review.name === 'string' ? review.name : '',
+      rating: typeof review.rating === 'string' || typeof review.rating === 'number' ? String(review.rating) : '5',
+      quote: typeof review.quote === 'string' ? review.quote : '',
+      source: typeof review.source === 'string' ? review.source : 'Google Maps'
+    }))
+  } catch {
+    return []
+  }
+}
+
+function serializeReviews(reviews: StoreReview[]) {
+  return JSON.stringify(reviews
+    .map((review) => ({
+      name: review.name.trim(),
+      rating: String(Math.min(5, Math.max(1, Number(review.rating) || 5))),
+      quote: review.quote.trim(),
+      source: review.source.trim() || 'Google Maps'
+    })))
+}
+
 export default function StoreSettingsPage({ settings, loading, onSettingsChange, onSave }: StoreSettingsPageProps) {
   function value(key: string) {
     return settings[`store.${key}`] ?? defaults[key] ?? ''
@@ -44,6 +78,20 @@ export default function StoreSettingsPage({ settings, loading, onSettingsChange,
 
   function toggle(key: string) {
     update(key, value(key) === 'true' ? 'false' : 'true')
+  }
+
+  const reviews = parseReviews(value('reviewsJson'))
+
+  function updateReview(index: number, key: keyof StoreReview, nextValue: string) {
+    update('reviewsJson', serializeReviews(reviews.map((review, reviewIndex) => reviewIndex === index ? { ...review, [key]: nextValue } : review)))
+  }
+
+  function addReview() {
+    update('reviewsJson', serializeReviews([...reviews, { name: '', rating: '5', quote: '', source: 'Google Maps' }]))
+  }
+
+  function removeReview(index: number) {
+    update('reviewsJson', serializeReviews(reviews.filter((_, reviewIndex) => reviewIndex !== index)))
   }
 
   return (
@@ -88,10 +136,49 @@ export default function StoreSettingsPage({ settings, loading, onSettingsChange,
           <h3>Линкове и правна информация</h3>
           <label>Facebook<input placeholder="https://facebook.com/..." value={value('facebookUrl')} onChange={(event) => update('facebookUrl', event.target.value)} /></label>
           <label>Instagram<input placeholder="https://instagram.com/..." value={value('instagramUrl')} onChange={(event) => update('instagramUrl', event.target.value)} /></label>
+          <label>TikTok<input placeholder="https://www.tiktok.com/@..." value={value('tiktokUrl')} onChange={(event) => update('tiktokUrl', event.target.value)} /></label>
+          <label>Google отзиви<input placeholder="https://share.google/..." value={value('googleReviewsUrl')} onChange={(event) => update('googleReviewsUrl', event.target.value)} /></label>
           <label>Общи условия<input placeholder="/terms" value={value('termsUrl')} onChange={(event) => update('termsUrl', event.target.value)} /></label>
           <label>Политика за поверителност<input placeholder="/privacy" value={value('privacyUrl')} onChange={(event) => update('privacyUrl', event.target.value)} /></label>
         </section>
       </div>
+
+      <section className="erp-card">
+        <div className="product-images-heading">
+          <div>
+            <h3>Отзиви от Google Maps</h3>
+            <small>Добавете ръчно избрани отзиви, звезди и цитати. Те ще се показват на началната страница.</small>
+          </div>
+          <div className="mini-actions">
+            <button type="button" className="mini-btn" onClick={addReview}>Добави отзив</button>
+            <button type="submit" className="mini-btn primary" disabled={loading}>Запази отзивите</button>
+          </div>
+        </div>
+
+        {reviews.length === 0 && <p className="muted">Все още няма добавени отзиви.</p>}
+
+        <div className="store-reviews-editor">
+          {reviews.map((review, index) => (
+            <div className="store-review-row" key={index}>
+              <div className="two">
+                <label>Име на клиента<input value={review.name} onChange={(event) => updateReview(index, 'name', event.target.value)} placeholder="Име от Google Maps" /></label>
+                <label>Звезди<select value={review.rating} onChange={(event) => updateReview(index, 'rating', event.target.value)}>
+                  <option value="5">5 звезди</option>
+                  <option value="4">4 звезди</option>
+                  <option value="3">3 звезди</option>
+                  <option value="2">2 звезди</option>
+                  <option value="1">1 звезда</option>
+                </select></label>
+              </div>
+              <label>Цитат<textarea value={review.quote} onChange={(event) => updateReview(index, 'quote', event.target.value)} placeholder="Поставете текста на отзива от Google Maps" /></label>
+              <div className="two">
+                <label>Източник<input value={review.source} onChange={(event) => updateReview(index, 'source', event.target.value)} placeholder="Google Maps" /></label>
+                <div className="actions"><button type="button" className="mini-btn danger" onClick={() => removeReview(index)}>Премахни</button></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="erp-card">
         <h3>Функции на магазина</h3>

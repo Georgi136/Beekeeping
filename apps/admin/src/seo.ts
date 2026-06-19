@@ -1,6 +1,6 @@
 export const SITE_URL = 'https://www.sakimed.com'
 export const SITE_NAME = 'САКИ - пчеларски магазин в Дупница'
-export const DEFAULT_SEO_IMAGE = `${SITE_URL}/bee-logo.jpg`
+export const DEFAULT_SEO_IMAGE = `${SITE_URL}/saki-logo.png`
 
 export const defaultDescription =
   'САКИ е семеен пчеларски магазин в Дупница. Предлагаме натурален мед от собствени пчелини, прополис, кошери, центрофуги и пчеларски инвентар.'

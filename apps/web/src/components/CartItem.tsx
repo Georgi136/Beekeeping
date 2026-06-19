@@ -1,4 +1,5 @@
 import { CartItem as CartItemType, useCart } from '../context/CartContext'
+import { useLanguage } from '../i18n/LanguageContext'
 
 interface CartItemProps {
   item: CartItemType
@@ -6,6 +7,8 @@ interface CartItemProps {
 
 export default function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeFromCart } = useCart()
+  const { formatPrice } = useLanguage()
+  const atStockLimit = typeof item.stock === 'number' && item.quantity >= item.stock
 
   return (
     <div className="cart-item">
@@ -14,7 +17,8 @@ export default function CartItem({ item }: CartItemProps) {
       </div>
       <div className="cart-item-details">
         <h3 className="cart-item-name">{item.name}</h3>
-        <p className="cart-item-price">{item.price} лв.</p>
+        <p className="cart-item-price">{formatPrice(item.price)}</p>
+        {typeof item.stock === 'number' && <p className="cart-item-stock">Налични: {item.stock}</p>}
       </div>
       <div className="cart-item-quantity">
         <button 
@@ -33,12 +37,13 @@ export default function CartItem({ item }: CartItemProps) {
         <button 
           className="qty-btn"
           onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+          disabled={atStockLimit}
         >
           +
         </button>
       </div>
       <div className="cart-item-subtotal">
-        {(item.price * item.quantity).toFixed(2)} лв.
+        {formatPrice(item.price * item.quantity)}
       </div>
       <button 
         className="cart-item-remove"
@@ -92,6 +97,12 @@ export default function CartItem({ item }: CartItemProps) {
           margin: 0;
         }
 
+        .cart-item-stock {
+          margin: 0.25rem 0 0;
+          font-size: 0.8rem;
+          color: #6b7280;
+        }
+
         .cart-item-quantity {
           display: flex;
           align-items: center;
@@ -113,6 +124,11 @@ export default function CartItem({ item }: CartItemProps) {
 
         .qty-btn:hover {
           background: #f5f5f5;
+        }
+
+        .qty-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
 
         .qty-input {

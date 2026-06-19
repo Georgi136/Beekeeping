@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { resolveProductImage } from '../../config'
+import RichDescriptionEditor from './RichDescriptionEditor'
 
 interface StoreAdminPageProps {
   adminFetch: (path: string, options?: RequestInit) => Promise<any>
@@ -27,6 +28,9 @@ export default function StoreAdminPage({ adminFetch, onStatus, onUploadImage }: 
   const [orders, setOrders] = useState<any[]>([])
   const [promotions, setPromotions] = useState<any[]>([])
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null)
+  const [editingPromotionId, setEditingPromotionId] = useState<number | null>(null)
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
   const [productForm, setProductForm] = useState(emptyProduct)
   const [categoryForm, setCategoryForm] = useState(emptyCategory)
   const [promotionForm, setPromotionForm] = useState(emptyPromotion)
@@ -121,16 +125,71 @@ export default function StoreAdminPage({ adminFetch, onStatus, onUploadImage }: 
 
   async function submitCategory(event: FormEvent) {
     event.preventDefault()
-    await adminFetch('/api/admin/categories', { method: 'POST', body: JSON.stringify({ ...categoryForm, sortOrder: Number(categoryForm.sortOrder) }) })
+    await adminFetch(editingCategoryId ? `/api/admin/categories/${editingCategoryId}` : '/api/admin/categories', {
+      method: editingCategoryId ? 'PUT' : 'POST',
+      body: JSON.stringify({ ...categoryForm, sortOrder: Number(categoryForm.sortOrder) })
+    })
+    setEditingCategoryId(null)
     setCategoryForm(emptyCategory)
     await loadStore()
+    onStatus(editingCategoryId ? 'Категорията е обновена.' : 'Категорията е добавена.')
   }
 
   async function submitPromotion(event: FormEvent) {
     event.preventDefault()
-    await adminFetch('/api/admin/promotions', { method: 'POST', body: JSON.stringify({ ...promotionForm, discountValue: Number(promotionForm.discountValue), productId: null, categoryId: null, startsAt: null, endsAt: null }) })
+    await adminFetch(editingPromotionId ? `/api/admin/promotions/${editingPromotionId}` : '/api/admin/promotions', {
+      method: editingPromotionId ? 'PUT' : 'POST',
+      body: JSON.stringify({ ...promotionForm, discountValue: Number(promotionForm.discountValue), productId: null, categoryId: null, startsAt: null, endsAt: null })
+    })
+    setEditingPromotionId(null)
     setPromotionForm(emptyPromotion)
     await loadStore()
+    onStatus(editingPromotionId ? 'Промоцията е обновена.' : 'Промоцията е добавена.')
+  }
+
+  function editCategory(category: any) {
+    setEditingCategoryId(category.id)
+    setCategoryForm({
+      name: category.name,
+      slug: category.slug,
+      description: category.description || '',
+      sortOrder: String(category.sortOrder ?? 0)
+    })
+  }
+
+  async function removeCategory(category: any) {
+    if (!window.confirm(`Да премахна ли категория "${category.name}"?`)) return
+    await adminFetch(`/api/admin/categories/${category.id}`, { method: 'DELETE' })
+    if (editingCategoryId === category.id) {
+      setEditingCategoryId(null)
+      setCategoryForm(emptyCategory)
+    }
+    await loadStore()
+    onStatus('Категорията е премахната.')
+  }
+
+  function editPromotion(promotion: any) {
+    setEditingPromotionId(promotion.id)
+    setPromotionForm({
+      title: promotion.title,
+      slug: promotion.slug,
+      description: promotion.description || '',
+      discountType: promotion.discountType,
+      discountValue: String(promotion.discountValue ?? 0),
+      active: promotion.active,
+      bannerText: promotion.bannerText || ''
+    })
+  }
+
+  async function removePromotion(promotion: any) {
+    if (!window.confirm(`Да премахна ли промоция "${promotion.title}"?`)) return
+    await adminFetch(`/api/admin/promotions/${promotion.id}`, { method: 'DELETE' })
+    if (editingPromotionId === promotion.id) {
+      setEditingPromotionId(null)
+      setPromotionForm(emptyPromotion)
+    }
+    await loadStore()
+    onStatus('Промоцията е премахната.')
   }
 
   async function updateOrder(id: string, status: string) {
@@ -164,7 +223,8 @@ export default function StoreAdminPage({ adminFetch, onStatus, onUploadImage }: 
           <div className="two"><input type="number" placeholder="Наличност" value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} /><select value={productForm.status} onChange={(e) => setProductForm({ ...productForm, status: e.target.value })}><option value="ACTIVE">Активен</option><option value="DRAFT">Чернова</option><option value="ARCHIVED">Архив</option></select></div>
           <label className="check"><input type="checkbox" checked={productForm.featured} onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })} /> Препоръчан</label>
           <textarea placeholder="Кратко описание" value={productForm.shortDescription} onChange={(e) => setProductForm({ ...productForm, shortDescription: e.target.value })} />
-          <textarea placeholder="Описание" value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} required />
+          <label>Описание</label>
+          <RichDescriptionEditor value={productForm.description} onChange={(description) => setProductForm({ ...productForm, description })} onUploadImage={onUploadImage} />
           <div className="product-images-editor">
             <div className="product-images-heading">
               <div><strong>Снимки на продукта</strong><small>Качете снимки от устройството или добавете външен URL адрес.</small></div>
@@ -184,11 +244,76 @@ export default function StoreAdminPage({ adminFetch, onStatus, onUploadImage }: 
         <div className="report-table-wrap"><table><thead><tr><th>Продукт</th><th>Категория</th><th>Цена</th><th>Склад</th><th>Статус</th><th></th></tr></thead><tbody>{products.map((product) => <tr key={product.id}><td>{product.name}</td><td>{product.categoryName}</td><td>{product.price} лв.</td><td>{product.stock}</td><td>{product.status}</td><td><div className="mini-actions"><button className="mini-btn" onClick={() => editProduct(product)}>Редакция</button>{product.status !== 'ARCHIVED' && <button className="mini-btn danger" onClick={() => removeProduct(product)}>Премахни</button>}</div></td></tr>)}</tbody></table></div>
       </section>}
 
-      {tab === 'orders' && <div className="report-table-wrap"><table><thead><tr><th>Клиент</th><th>Контакт</th><th>Адрес</th><th>Общо</th><th>Статус</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td>{order.customerName}<small>{order.items.map((item: any) => `${item.name} x${item.quantity}`).join(', ')}</small></td><td>{order.phone}<small>{order.email}</small></td><td>{order.address}</td><td>{order.totalPrice} лв.</td><td><select value={order.status} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="PENDING">Нова</option><option value="CONFIRMED">Потвърдена</option><option value="SHIPPED">Изпратена</option><option value="COMPLETED">Завършена</option><option value="CANCELLED">Отказана</option></select></td></tr>)}</tbody></table></div>}
+      {tab === 'orders' && <div className="report-table-wrap">
+        <table>
+          <thead><tr><th>Клиент</th><th>Контакт</th><th>Адрес</th><th>Общо</th><th>Статус</th><th></th></tr></thead>
+          <tbody>{orders.map((order) => (
+            <Fragment key={order.id}>
+              <tr>
+                <td>{order.customerName}<small>{order.items.map((item: any) => `${item.name} x${item.quantity}`).join(', ')}</small></td>
+                <td>{order.phone}<small>{order.email}</small></td>
+                <td>{order.address}</td>
+                <td>{order.totalPrice} лв.</td>
+                <td><select value={order.status} onChange={(e) => updateOrder(order.id, e.target.value)}><option value="PENDING">Нова</option><option value="CONFIRMED">Потвърдена</option><option value="SHIPPED">Изпратена</option><option value="COMPLETED">Завършена</option><option value="CANCELLED">Отказана</option></select></td>
+                <td><button className="mini-btn" onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}>{expandedOrderId === order.id ? 'Скрий' : 'Детайли'}</button></td>
+              </tr>
+              {expandedOrderId === order.id && <tr key={`${order.id}-details`}>
+                <td colSpan={6}>
+                  <div className="erp-card">
+                    <strong>Поръчка {order.id}</strong>
+                    <p>Създадена: {new Date(order.createdAt).toLocaleString('bg-BG')}</p>
+                    {order.notes && <pre className="order-notes">{order.notes}</pre>}
+                    <div className="report-table-wrap">
+                      <table>
+                        <thead><tr><th>Продукт</th><th>Количество</th><th>Цена</th></tr></thead>
+                        <tbody>{order.items.map((item: any) => <tr key={item.id}><td>{item.name}</td><td>{item.quantity}</td><td>{item.price} лв.</td></tr>)}</tbody>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+              </tr>}
+            </Fragment>
+          ))}</tbody>
+        </table>
+      </div>}
 
-      {tab === 'categories' && <section className="store-split"><form className="erp-card" onSubmit={submitCategory}><h3>Нова категория</h3><input placeholder="Име" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} required /><input placeholder="slug" value={categoryForm.slug} onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })} /><textarea placeholder="Описание" value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} /><input type="number" placeholder="Подредба" value={categoryForm.sortOrder} onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: e.target.value })} /><button className="erp-btn primary">Добави</button></form><div className="erp-card"><h3>Категории</h3>{categories.map((category) => <div className="erp-row" key={category.id}><strong>{category.name}</strong><span>/{category.slug}</span></div>)}</div></section>}
+      {tab === 'categories' && <section className="store-split">
+        <form className="erp-card" onSubmit={submitCategory}>
+          <h3>{editingCategoryId ? 'Редакция на категория' : 'Нова категория'}</h3>
+          <input placeholder="Име" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} required />
+          <input placeholder="slug" value={categoryForm.slug} onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })} />
+          <textarea placeholder="Описание" value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} />
+          <input type="number" placeholder="Подредба" value={categoryForm.sortOrder} onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: e.target.value })} />
+          <div className="actions"><button className="erp-btn primary">{editingCategoryId ? 'Запази' : 'Добави'}</button>{editingCategoryId && <button type="button" onClick={() => { setEditingCategoryId(null); setCategoryForm(emptyCategory) }}>Отказ</button>}</div>
+        </form>
+        <div className="erp-card">
+          <h3>Категории</h3>
+          {categories.map((category) => <div className="erp-row" key={category.id}>
+            <div><strong>{category.name}</strong><span>/{category.slug}</span></div>
+            <div className="mini-actions"><button className="mini-btn" onClick={() => editCategory(category)}>Редакция</button><button className="mini-btn danger" onClick={() => removeCategory(category)}>Премахни</button></div>
+          </div>)}
+        </div>
+      </section>}
 
-      {tab === 'promotions' && <section className="store-split"><form className="erp-card" onSubmit={submitPromotion}><h3>Нова промоция</h3><input placeholder="Заглавие" value={promotionForm.title} onChange={(e) => setPromotionForm({ ...promotionForm, title: e.target.value })} required /><input placeholder="slug" value={promotionForm.slug} onChange={(e) => setPromotionForm({ ...promotionForm, slug: e.target.value })} /><textarea placeholder="Описание" value={promotionForm.description} onChange={(e) => setPromotionForm({ ...promotionForm, description: e.target.value })} /><div className="two"><select value={promotionForm.discountType} onChange={(e) => setPromotionForm({ ...promotionForm, discountType: e.target.value })}><option value="PERCENTAGE">Процент</option><option value="FIXED">Фиксирана сума</option></select><input type="number" step="0.01" placeholder="Отстъпка" value={promotionForm.discountValue} onChange={(e) => setPromotionForm({ ...promotionForm, discountValue: e.target.value })} /></div><input placeholder="Текст за банер" value={promotionForm.bannerText} onChange={(e) => setPromotionForm({ ...promotionForm, bannerText: e.target.value })} /><label className="check"><input type="checkbox" checked={promotionForm.active} onChange={(e) => setPromotionForm({ ...promotionForm, active: e.target.checked })} /> Активна</label><button className="erp-btn primary">Добави</button></form><div className="erp-card"><h3>Промоции</h3>{promotions.map((promotion) => <div className="erp-row" key={promotion.id}><strong>{promotion.title}</strong><span>{promotion.discountValue} {promotion.discountType === 'PERCENTAGE' ? '%' : 'лв.'} · {promotion.active ? 'активна' : 'спряна'}</span></div>)}</div></section>}
+      {tab === 'promotions' && <section className="store-split">
+        <form className="erp-card" onSubmit={submitPromotion}>
+          <h3>{editingPromotionId ? 'Редакция на промоция' : 'Нова промоция'}</h3>
+          <input placeholder="Заглавие" value={promotionForm.title} onChange={(e) => setPromotionForm({ ...promotionForm, title: e.target.value })} required />
+          <input placeholder="slug" value={promotionForm.slug} onChange={(e) => setPromotionForm({ ...promotionForm, slug: e.target.value })} />
+          <textarea placeholder="Описание" value={promotionForm.description} onChange={(e) => setPromotionForm({ ...promotionForm, description: e.target.value })} />
+          <div className="two"><select value={promotionForm.discountType} onChange={(e) => setPromotionForm({ ...promotionForm, discountType: e.target.value })}><option value="PERCENTAGE">Процент</option><option value="FIXED">Фиксирана сума</option></select><input type="number" step="0.01" placeholder="Отстъпка" value={promotionForm.discountValue} onChange={(e) => setPromotionForm({ ...promotionForm, discountValue: e.target.value })} /></div>
+          <input placeholder="Текст за банер" value={promotionForm.bannerText} onChange={(e) => setPromotionForm({ ...promotionForm, bannerText: e.target.value })} />
+          <label className="check"><input type="checkbox" checked={promotionForm.active} onChange={(e) => setPromotionForm({ ...promotionForm, active: e.target.checked })} /> Активна</label>
+          <div className="actions"><button className="erp-btn primary">{editingPromotionId ? 'Запази' : 'Добави'}</button>{editingPromotionId && <button type="button" onClick={() => { setEditingPromotionId(null); setPromotionForm(emptyPromotion) }}>Отказ</button>}</div>
+        </form>
+        <div className="erp-card">
+          <h3>Промоции</h3>
+          {promotions.map((promotion) => <div className="erp-row" key={promotion.id}>
+            <div><strong>{promotion.title}</strong><span>{promotion.discountValue} {promotion.discountType === 'PERCENTAGE' ? '%' : 'лв.'} · {promotion.active ? 'активна' : 'спряна'}</span></div>
+            <div className="mini-actions"><button className="mini-btn" onClick={() => editPromotion(promotion)}>Редакция</button><button className="mini-btn danger" onClick={() => removePromotion(promotion)}>Премахни</button></div>
+          </div>)}
+        </div>
+      </section>}
     </section>
   )
 }

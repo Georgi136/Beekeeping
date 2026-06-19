@@ -1,11 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useLanguage } from '../i18n/LanguageContext'
 import CartItem from '../components/CartItem'
 import SEO from '../components/SEO'
 
 export default function CartPage() {
   const navigate = useNavigate()
   const { cart, getTotalPrice, clearCart } = useCart()
+  const { formatPrice, storefrontSettings } = useLanguage()
+  const subtotal = getTotalPrice()
+  const minimumOrder = Number(storefrontSettings.minimumOrderAmount || 0)
+  const flatShippingFee = Number(storefrontSettings.flatShippingFee || 0)
+  const freeShippingThreshold = Number(storefrontSettings.freeShippingThreshold || 0)
+  const shippingFee = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold ? 0 : flatShippingFee
+  const orderTotal = subtotal + shippingFee
+  const storeEnabled = storefrontSettings.enabled !== 'false'
+  const meetsMinimumOrder = minimumOrder <= 0 || subtotal >= minimumOrder
 
   if (cart.length === 0) {
     return (
@@ -73,24 +83,33 @@ export default function CartPage() {
 
               <div className="summary-row">
                 <span>Междинна сума:</span>
-                <span>{getTotalPrice().toFixed(2)} лв.</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
 
               <div className="summary-row">
                 <span>Доставка:</span>
-                <span className="delivery-note">Зависи от адреса</span>
+                <span className="delivery-note">{shippingFee > 0 ? formatPrice(shippingFee) : 'Безплатна'}</span>
               </div>
+
+              {minimumOrder > 0 && !meetsMinimumOrder && (
+                <div className="cart-warning">Минимална поръчка: {formatPrice(minimumOrder)}</div>
+              )}
+
+              {!storeEnabled && (
+                <div className="cart-warning">Онлайн магазинът временно не приема поръчки.</div>
+              )}
 
               <div className="summary-divider"></div>
 
               <div className="summary-row total">
                 <span>Общо:</span>
-                <span>{getTotalPrice().toFixed(2)} лв.</span>
+                <span>{formatPrice(orderTotal)}</span>
               </div>
 
               <button 
                 className="btn btn-primary btn-block"
                 onClick={() => navigate('/checkout')}
+                disabled={!storeEnabled || !meetsMinimumOrder}
               >
                 Към поръчката
               </button>
@@ -196,6 +215,15 @@ export default function CartPage() {
         .delivery-note {
           font-size: 0.85rem;
           color: #999;
+        }
+
+        .cart-warning {
+          margin-top: 0.75rem;
+          padding: 0.75rem;
+          border-radius: 0.375rem;
+          background: #fff8e7;
+          color: var(--color-secondary);
+          font-size: 0.9rem;
         }
 
         .summary-divider {

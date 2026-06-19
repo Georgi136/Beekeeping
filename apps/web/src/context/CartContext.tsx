@@ -7,11 +7,12 @@ export interface CartItem {
   price: number
   quantity: number
   image: string
+  stock?: number
 }
 
 interface CartContextType {
   cart: CartItem[]
-  addToCart: (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string }, quantity: number) => void
+  addToCart: (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string; stock?: number }, quantity: number) => void
   removeFromCart: (productId: number) => void
   updateQuantity: (productId: number, quantity: number) => void
   clearCart: () => void
@@ -22,6 +23,11 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 const CART_STORAGE_KEY = 'saki_bee_cart'
+
+function clampQuantity(quantity: number, stock?: number) {
+  const safeQuantity = Math.max(1, Math.floor(quantity) || 1)
+  return typeof stock === 'number' ? Math.min(safeQuantity, Math.max(0, stock)) : safeQuantity
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([])
@@ -43,7 +49,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
   }, [cart])
 
-  const addToCart = (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string }, quantity: number) => {
+  const addToCart = (product: { id: number; slug?: string; name: string; price: number; salePrice?: number | null; image: string; stock?: number }, quantity: number) => {
     const price = product.salePrice ?? product.price
 
     setCart(prevCart => {
@@ -52,7 +58,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         return prevCart.map(item =>
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: clampQuantity(item.quantity + quantity, product.stock ?? item.stock), stock: product.stock ?? item.stock }
             : item
         )
       }
@@ -64,8 +70,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           slug: product.slug,
           name: product.name,
           price,
-          quantity,
-          image: product.image
+          quantity: clampQuantity(quantity, product.stock),
+          image: product.image,
+          stock: product.stock
         }
       ]
     })
@@ -84,7 +91,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCart(prevCart =>
       prevCart.map(item =>
         item.productId === productId
-          ? { ...item, quantity }
+          ? { ...item, quantity: clampQuantity(quantity, item.stock) }
           : item
       )
     )

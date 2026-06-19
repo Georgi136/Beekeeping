@@ -15,7 +15,11 @@ interface FormStatus {
 }
 
 export default function Contact() {
-  const { t } = useLanguage()
+  const { t, storefrontSettings } = useLanguage()
+  const supportPhone = storefrontSettings.supportPhone || t('phoneValue')
+  const supportEmail = storefrontSettings.supportEmail || t('emailValue')
+  const siteUrl = storefrontSettings.siteUrl || t('websiteValue')
+  const facebookUrl = storefrontSettings.facebookUrl || 'https://facebook.com/Saki2008'
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -81,7 +85,7 @@ export default function Contact() {
               <div className="contact-icon">📞</div>
               <div>
                 <h3>{t('phone')}</h3>
-                <p>{t('phoneValue')}</p>
+                <p>{supportPhone}</p>
               </div>
             </div>
 
@@ -89,7 +93,7 @@ export default function Contact() {
               <div className="contact-icon">✉️</div>
               <div>
                 <h3>{t('email')}</h3>
-                <p>{t('emailValue')}</p>
+                <p>{supportEmail}</p>
               </div>
             </div>
 
@@ -97,7 +101,7 @@ export default function Contact() {
               <div className="contact-icon">🌐</div>
               <div>
                 <h3>{t('website')}</h3>
-                <p>{t('websiteValue')}</p>
+                <p>{siteUrl}</p>
               </div>
             </div>
 
@@ -105,7 +109,7 @@ export default function Contact() {
               <div className="contact-icon">📘</div>
               <div>
                 <h3>{t('facebook')}</h3>
-                <p><a href="https://facebook.com/Saki2008" target="_blank" rel="noopener noreferrer">{t('facebookValue')}</a></p>
+                <p><a href={facebookUrl} target="_blank" rel="noopener noreferrer">{facebookUrl.replace(/^https?:\/\//, '')}</a></p>
               </div>
             </div>
 

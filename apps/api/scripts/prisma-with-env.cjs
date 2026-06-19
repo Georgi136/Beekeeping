@@ -21,10 +21,16 @@ for (const envFile of envFiles) {
   }
 }
 
-const result = spawnSync('prisma', process.argv.slice(2), {
+const prismaBin = resolve(__dirname, '..', 'node_modules', '.bin', process.platform === 'win32' ? 'prisma.cmd' : 'prisma')
+
+const result = spawnSync(prismaBin, process.argv.slice(2), {
   stdio: 'inherit',
-  shell: true,
+  shell: process.platform === 'win32',
   env: process.env
 })
+
+if (result.error) {
+  console.error(result.error.message)
+}
 
 process.exit(result.status ?? 1)

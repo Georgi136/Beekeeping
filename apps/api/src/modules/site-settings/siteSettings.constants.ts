@@ -70,8 +70,11 @@ export const storefrontSettingKeys = [
   'orderSuccessMessage',
   'announcementEnabled',
   'announcementText',
+  'reviewsJson',
+  'googleReviewsUrl',
   'facebookUrl',
   'instagramUrl',
+  'tiktokUrl',
   'termsUrl',
   'privacyUrl'
 ] as const

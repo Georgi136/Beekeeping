@@ -16,7 +16,8 @@
     "build:admin": "cd apps/admin && npm run build",
     "build:server": "cd apps/api && npm run build",
     "start": "cd apps/api && npm start",
-    "install:all": "npm install && cd apps/web && npm install && cd ../admin && npm install && cd ../api && npm install"
+    "install:all": "npm install && cd apps/web && npm install && cd ../admin && npm install && cd ../api && npm install",
+    "smoke:shop": "node scripts/smoke-shop.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

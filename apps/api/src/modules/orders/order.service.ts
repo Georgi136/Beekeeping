@@ -3,6 +3,7 @@ import { AppError } from '../../errors/AppError'
 import { prisma } from '../../lib/prisma'
 import { listOrders, orderInclude } from './order.repository'
 import { toNumber } from '../../utils/money'
+import { notifyNewOrder } from '../../services/notificationService'
 import type { OrderInput, OrderWithItems } from './order.types'
 
 function orderToDto(order: OrderWithItems) {
@@ -124,7 +125,9 @@ export async function createCustomerOrder(input: OrderInput) {
     return created
   })
 
-  return orderToDto(order)
+  const dto = orderToDto(order)
+  const notification = await notifyNewOrder(dto)
+  return { ...dto, notification }
 }
 
 export async function getAdminOrders() {

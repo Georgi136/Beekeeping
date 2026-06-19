@@ -11,6 +11,7 @@ interface Product {
   price: number
   salePrice?: number | null
   image: string
+  stock?: number
   featured?: boolean
 }
 
@@ -55,6 +56,7 @@ export default function Products() {
                 price={product.price}
                 salePrice={product.salePrice}
                 image={product.image}
+                stock={product.stock}
                 onViewDetails={(idOrSlug) => navigate(`/products/${idOrSlug}`)}
               />
             ))}

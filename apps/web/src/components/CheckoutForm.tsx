@@ -1,26 +1,69 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
+import { useLanguage } from '../i18n/LanguageContext'
 import { apiUrl } from '../config'
 
+export interface CompletedOrder {
+  id: string
+  customerName: string
+  phone: string
+  email?: string | null
+  address: string
+  notes?: string | null
+  status: string
+  totalPrice: number
+  notification?: {
+    customerSent: boolean
+    adminSent: boolean
+  }
+  items: Array<{
+    id: string
+    productId: number
+    name: string
+    price: number
+    quantity: number
+    image?: string
+  }>
+}
+
 interface CheckoutFormProps {
-  onOrderSuccess?: (orderId: string) => void
+  onOrderSuccess?: (order: CompletedOrder) => void
 }
 
 export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
   const { cart, clearCart } = useCart()
+  const { storefrontSettings } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   
   const [formData, setFormData] = useState({
     customerName: '',
     email: '',
     phone: '',
+    city: '',
     address: '',
+    deliveryMethod: storefrontSettings.pickupEnabled === 'true' && storefrontSettings.courierEnabled !== 'true' ? 'pickup' : 'courier',
+    paymentMethod: storefrontSettings.bankTransferEnabled === 'true' && storefrontSettings.cashOnDeliveryEnabled !== 'true' ? 'bank' : 'cash_on_delivery',
     notes: ''
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    setFormData((current) => ({
+      ...current,
+      deliveryMethod: current.deliveryMethod === 'pickup' && storefrontSettings.pickupEnabled === 'false'
+        ? 'courier'
+        : current.deliveryMethod === 'courier' && storefrontSettings.courierEnabled === 'false'
+          ? 'pickup'
+          : current.deliveryMethod,
+      paymentMethod: current.paymentMethod === 'bank' && storefrontSettings.bankTransferEnabled !== 'true'
+        ? 'cash_on_delivery'
+        : current.paymentMethod === 'cash_on_delivery' && storefrontSettings.cashOnDeliveryEnabled === 'false'
+          ? 'bank'
+          : current.paymentMethod
+    }))
+  }, [storefrontSettings])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -34,6 +77,17 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
     setLoading(true)
 
     try {
+      const deliveryLabel = formData.deliveryMethod === 'pickup' ? 'Вземане от магазина' : 'Доставка с куриер'
+      const paymentLabel = formData.paymentMethod === 'bank' ? 'Банков превод' : 'Наложен платеж'
+      const address = formData.deliveryMethod === 'pickup'
+        ? `Вземане от магазина${formData.city ? `, град: ${formData.city}` : ''}`
+        : `${formData.city}, ${formData.address}`.trim()
+      const notes = [
+        `Доставка: ${deliveryLabel}`,
+        `Плащане: ${paymentLabel}`,
+        formData.notes ? `Бележка: ${formData.notes}` : ''
+      ].filter(Boolean).join('\n')
+
       const response = await fetch(apiUrl('/api/orders'), {
         method: 'POST',
         headers: {
@@ -43,8 +97,8 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
           customerName: formData.customerName,
           email: formData.email,
           phone: formData.phone,
-          address: formData.address,
-          notes: formData.notes,
+          address,
+          notes,
           items: cart.map(item => ({
             productId: item.productId,
             quantity: item.quantity
@@ -58,31 +112,28 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
       }
 
       const data = await response.json()
-      setSuccess(true)
       clearCart()
       
       if (onOrderSuccess) {
-        onOrderSuccess(data.order.id)
+        onOrderSuccess(data.order)
       }
 
       // Reset form
-      setFormData({ customerName: '', email: '', phone: '', address: '', notes: '' })
+      setFormData({
+        customerName: '',
+        email: '',
+        phone: '',
+        city: '',
+        address: '',
+        deliveryMethod: storefrontSettings.pickupEnabled === 'true' && storefrontSettings.courierEnabled !== 'true' ? 'pickup' : 'courier',
+        paymentMethod: storefrontSettings.bankTransferEnabled === 'true' && storefrontSettings.cashOnDeliveryEnabled !== 'true' ? 'bank' : 'cash_on_delivery',
+        notes: ''
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Възникна грешка. Моля, опитайте отново.')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <div className="checkout-success">
-        <div className="success-icon">✓</div>
-        <h2>Поръчката е приета!</h2>
-        <p>Благодарим ви за поръчката. Ще се свържем с вас за потвърждение.</p>
-        <p className="success-note">Ако имате въпрос, можете да ни потърсите и по телефона.</p>
-      </div>
-    )
   }
 
   return (
@@ -129,14 +180,57 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
         />
       </div>
 
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="deliveryMethod">Начин на получаване *</label>
+          <select
+            id="deliveryMethod"
+            name="deliveryMethod"
+            value={formData.deliveryMethod}
+            onChange={handleChange}
+            required
+          >
+            {storefrontSettings.courierEnabled !== 'false' && <option value="courier">Доставка с куриер</option>}
+            {storefrontSettings.pickupEnabled !== 'false' && <option value="pickup">Вземане от магазина</option>}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="paymentMethod">Плащане *</label>
+          <select
+            id="paymentMethod"
+            name="paymentMethod"
+            value={formData.paymentMethod}
+            onChange={handleChange}
+            required
+          >
+            {storefrontSettings.cashOnDeliveryEnabled !== 'false' && <option value="cash_on_delivery">Наложен платеж</option>}
+            {storefrontSettings.bankTransferEnabled === 'true' && <option value="bank">Банков превод</option>}
+          </select>
+        </div>
+      </div>
+
       <div className="form-group">
-        <label htmlFor="address">Адрес за доставка *</label>
+        <label htmlFor="city">Град *</label>
+        <input
+          type="text"
+          id="city"
+          name="city"
+          value={formData.city}
+          onChange={handleChange}
+          required
+          placeholder="Дупница"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="address">{formData.deliveryMethod === 'pickup' ? 'Допълнителна информация' : 'Адрес за доставка *'}</label>
         <textarea
           id="address"
           name="address"
           value={formData.address}
           onChange={handleChange}
-          required
+          required={formData.deliveryMethod !== 'pickup'}
           placeholder="ул. Пример 123, гр. Дупница"
           rows={3}
         />
@@ -189,6 +283,12 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
           margin-bottom: 1.5rem;
         }
 
+        .form-row {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
         .form-group label {
           display: block;
           margin-bottom: 0.5rem;
@@ -198,7 +298,8 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
         }
 
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
           width: 100%;
           padding: 0.75rem;
           border: 1px solid #ddd;
@@ -209,10 +310,18 @@ export default function CheckoutForm({ onOrderSuccess }: CheckoutFormProps) {
         }
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
           outline: none;
           border-color: var(--color-primary);
           box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        @media (max-width: 640px) {
+          .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+          }
         }
 
         .btn-lg {

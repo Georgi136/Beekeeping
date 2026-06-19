@@ -20,11 +20,17 @@ function mapImages(input: ProductInput['images'], fallbackAlt: string): Prisma.P
   }))
 }
 
+function plainTextFromHtml(value: string) {
+  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 function mapProductInput(input: ProductInput): Prisma.ProductCreateInput {
+  const descriptionText = plainTextFromHtml(input.description) || input.name
+
   return {
     name: input.name,
     slug: input.slug ? makeSlug(input.slug) : makeSlug(input.name),
-    shortDescription: input.shortDescription || input.description.slice(0, 180),
+    shortDescription: input.shortDescription || descriptionText.slice(0, 180),
     description: input.description,
     price: toDecimal(input.price) ?? 0,
     salePrice: toDecimal(input.salePrice),
@@ -32,7 +38,7 @@ function mapProductInput(input: ProductInput): Prisma.ProductCreateInput {
     status: input.status,
     featured: input.featured,
     seoTitle: input.seoTitle || `${input.name} | САКИ`,
-    seoDescription: input.seoDescription || input.shortDescription || input.description.slice(0, 160),
+    seoDescription: input.seoDescription || input.shortDescription || descriptionText.slice(0, 160),
     category: {
       connect: { id: input.categoryId }
     },

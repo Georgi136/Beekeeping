@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useLanguage } from '../i18n/LanguageContext'
 import SEO from '../components/SEO'
 import { apiUrl, resolveProductImage } from '../config'
 import { absoluteUrl, SITE_NAME } from '../seo'
+import { plainTextFromProductHtml, sanitizeProductHtml } from '../utils/sanitizeProductHtml'
 
 interface Product {
   id: number
@@ -22,6 +24,7 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToCart } = useCart()
+  const { formatPrice, storefrontCurrency, storefrontSettings } = useLanguage()
   
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,7 +52,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (product) {
-      addToCart(product, quantity)
+      addToCart({ ...product, stock: storefrontSettings.allowOutOfStockOrders === 'true' ? undefined : product.stock }, quantity)
       setAddedToCart(true)
       setTimeout(() => setAddedToCart(false), 2000)
     }
@@ -86,14 +89,20 @@ export default function ProductDetailPage() {
 
   const categoryLabel = product.categoryName || (product.category === 'pchelni-produkti' ? 'Пчелни продукти' : 'За пчелари')
   const inStock = product.stock > 0
+  const canOrderOutOfStock = storefrontSettings.allowOutOfStockOrders === 'true'
+  const canOrder = storefrontSettings.enabled !== 'false' && (inStock || canOrderOutOfStock)
+  const maxQuantity = canOrderOutOfStock ? undefined : product.stock
   const productTitle = `${product.name} | ${SITE_NAME}`
   const currentPrice = product.salePrice ?? product.price
-  const productDescription = `${product.description} Цена: ${currentPrice} лв. ${inStock ? 'В наличност.' : 'Временно изчерпан.'}`
+  const plainDescription = plainTextFromProductHtml(product.description)
+  const productDescription = `${plainDescription} Цена: ${formatPrice(currentPrice)} ${inStock ? 'В наличност.' : 'Временно изчерпан.'}`
+  const safeDescriptionHtml = sanitizeProductHtml(product.description)
+  const schemaPrice = storefrontCurrency === 'EUR' ? currentPrice / 1.95583 : currentPrice
   const productJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: product.description,
+    description: plainDescription,
     image: absoluteUrl(product.image),
     brand: {
       '@type': 'Brand',
@@ -102,8 +111,8 @@ export default function ProductDetailPage() {
     offers: {
       '@type': 'Offer',
       url: absoluteUrl(`/products/${product.slug}`),
-      priceCurrency: 'BGN',
-      price: currentPrice,
+      priceCurrency: storefrontCurrency,
+      price: Number(schemaPrice.toFixed(2)),
       availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
     }
   }
@@ -129,28 +138,12 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="product-detail-content">
-            <div className="breadcrumb">
-              <span className="category-badge">{categoryLabel}</span>
-            </div>
-
             <h1 className="product-detail-name">{product.name}</h1>
 
             <div className="product-detail-price">
-              {product.salePrice && <span className="old-price">{product.price} лв.</span>}
-              <span className="price-amount">{currentPrice}</span>
-              <span className="price-currency">лв.</span>
+              {product.salePrice && <span className="old-price">{formatPrice(product.price)}</span>}
+              <span className="price-amount">{formatPrice(currentPrice)}</span>
             </div>
-
-            <div className="product-detail-description">
-              <h3>Описание</h3>
-              <p>{product.description}</p>
-            </div>
-
-            {!inStock && (
-              <div className="stock-warning">
-                В момента няма наличност.
-              </div>
-            )}
 
             <div className="product-detail-actions">
               <div className="quantity-selector">
@@ -167,13 +160,18 @@ export default function ProductDetailPage() {
                     id="quantity"
                     type="number"
                     min="1"
+                    max={maxQuantity}
                     value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                    onChange={(e) => {
+                      const nextQuantity = Math.max(1, parseInt(e.target.value, 10) || 1)
+                      setQuantity(maxQuantity ? Math.min(maxQuantity, nextQuantity) : nextQuantity)
+                    }}
                     className="qty-input"
                   />
                   <button
                     className="qty-btn"
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(maxQuantity ? Math.min(maxQuantity, quantity + 1) : quantity + 1)}
+                    disabled={Boolean(maxQuantity && quantity >= maxQuantity)}
                   >
                     +
                   </button>
@@ -183,15 +181,21 @@ export default function ProductDetailPage() {
               <button
                 className="btn btn-primary btn-large"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!canOrder}
               >
-                Добави в количката
+                {storefrontSettings.enabled === 'false' ? 'Магазинът е спрян' : 'Добави в количката'}
               </button>
 
               {addedToCart && (
                 <div className="added-message">✓ Добавено в количката.</div>
               )}
             </div>
+
+            {!inStock && (
+              <div className="stock-warning">
+                В момента няма наличност.
+              </div>
+            )}
 
             <div className="product-info">
               <div className="info-item">
@@ -204,6 +208,11 @@ export default function ProductDetailPage() {
                 <span className="info-label">Категория:</span>
                 <span className="info-value">{categoryLabel}</span>
               </div>
+            </div>
+
+            <div className="product-detail-description">
+              <h3>Описание</h3>
+              <div className="rich-product-description" dangerouslySetInnerHTML={{ __html: safeDescriptionHtml }} />
             </div>
           </div>
         </div>
@@ -262,20 +271,6 @@ export default function ProductDetailPage() {
           flex-direction: column;
         }
 
-        .breadcrumb {
-          margin-bottom: 1rem;
-        }
-
-        .category-badge {
-          display: inline-block;
-          background: var(--color-primary);
-          color: white;
-          padding: 0.4rem 0.8rem;
-          border-radius: 0.25rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
         .product-detail-name {
           font-size: 2rem;
           color: var(--color-secondary);
@@ -318,10 +313,57 @@ export default function ProductDetailPage() {
           font-size: 1.1rem;
         }
 
-        .product-detail-description p {
+        .rich-product-description {
           color: var(--color-text-light);
           line-height: 1.6;
+        }
+
+        .rich-product-description p,
+        .rich-product-description h3,
+        .rich-product-description h4,
+        .rich-product-description ul,
+        .rich-product-description ol,
+        .rich-product-description blockquote {
           margin: 0;
+        }
+
+        .rich-product-description p,
+        .rich-product-description ul,
+        .rich-product-description ol,
+        .rich-product-description blockquote {
+          margin-bottom: 1rem;
+        }
+
+        .rich-product-description h3,
+        .rich-product-description h4 {
+          color: var(--color-secondary);
+          margin-bottom: 0.75rem;
+        }
+
+        .rich-product-description ul,
+        .rich-product-description ol {
+          padding-left: 1.35rem;
+        }
+
+        .rich-product-description img {
+          display: block;
+          width: min(100%, 560px);
+          height: auto;
+          margin: 1rem 0;
+          border-radius: 0.5rem;
+          background: #f5f5f5;
+        }
+
+        .rich-product-description a {
+          color: var(--color-primary);
+          font-weight: 600;
+        }
+
+        .rich-product-description blockquote {
+          padding: 0.75rem 1rem;
+          border-left: 4px solid var(--color-primary);
+          background: #fff8e7;
+          color: var(--color-secondary);
         }
 
         .stock-warning {
@@ -412,6 +454,7 @@ export default function ProductDetailPage() {
 
         .product-info {
           padding-top: 1.5rem;
+          margin-bottom: 2rem;
           border-top: 1px solid #eee;
         }
 
@@ -432,22 +475,37 @@ export default function ProductDetailPage() {
         }
 
         @media (max-width: 768px) {
+          .product-detail-page {
+            padding: 1rem 0;
+          }
+
+          .back-btn {
+            margin-bottom: 1rem;
+          }
+
           .product-detail-container {
             grid-template-columns: 1fr;
-            gap: 2rem;
+            gap: 1rem;
             padding: 1rem;
+          }
+
+          .product-detail-image {
+            aspect-ratio: 4 / 3;
           }
 
           .product-detail-name {
             font-size: 1.5rem;
+            margin: 0.75rem 0 1rem;
           }
 
           .product-detail-price {
             font-size: 2rem;
+            margin-bottom: 1rem;
           }
 
           .product-detail-actions {
             flex-direction: column;
+            margin-bottom: 1.5rem;
           }
 
           .btn-large {

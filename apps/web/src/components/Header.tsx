@@ -46,7 +46,7 @@ export default function Header() {
             }
           }}
         >
-            <img src="/bee-logo.jpg" alt={language === 'bg' ? 'Лого на пчеларски магазин САКИ' : 'SAKI beekeeping shop logo'} className="logo-img" />
+            <img src="/saki-logo.png" alt={language === 'bg' ? 'Лого на пчеларски магазин САКИ' : 'SAKI beekeeping shop logo'} className="logo-img" />
         </Link>
         
         <nav className={`nav ${isMenuOpen ? 'nav-open' : ''}`}>
@@ -96,7 +96,7 @@ export default function Header() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          height: 4rem;
+          height: 4.5rem;
         }
 
         .logo {
@@ -107,9 +107,9 @@ export default function Header() {
         }
 
         .logo-img {
-          height: 50px;
+          height: 64px;
           width: auto;
-          max-width: 150px;
+          max-width: 190px;
           object-fit: contain;
           transition: transform 0.2s ease;
         }
@@ -226,9 +226,13 @@ export default function Header() {
         }
 
         @media (max-width: 768px) {
+          .header-container {
+            height: 4.25rem;
+          }
+
           .logo-img {
-            height: 40px;
-            max-width: 120px;
+            height: 56px;
+            max-width: 160px;
           }
 
           .menu-toggle {

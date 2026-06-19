@@ -31,6 +31,16 @@ cd apps/api
 npm run db:deploy
 ```
 
+## Shop Smoke Test
+
+With the API running, run non-mutating shop checks:
+
+```bash
+npm run smoke:shop
+```
+
+For deployment and release details, see `docs/PRODUCTION_READINESS.md`.
+
 ## Database Backups
 
 Create backups before migrations, imports, or production releases.

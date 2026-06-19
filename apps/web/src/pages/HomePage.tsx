@@ -1,6 +1,7 @@
 import Hero from '../components/Hero'
 import About from '../components/About'
 import Products from '../components/Products'
+import Reviews from '../components/Reviews'
 import Contact from '../components/Contact'
 import SEO from '../components/SEO'
 import { useEffect } from 'react'
@@ -17,9 +18,13 @@ export default function HomePage() {
     hero: <Hero />,
     products: <Products />,
     about: <About />,
+    reviews: <Reviews />,
     contact: <Contact />
   }
-  const order = (homepageMeta.sectionOrder || 'hero,about,products,contact').split(',') as Array<keyof typeof sections>
+  const savedOrder = (homepageMeta.sectionOrder || 'hero,about,products,reviews,contact').split(',') as Array<keyof typeof sections>
+  const order = savedOrder.includes('reviews')
+    ? savedOrder
+    : savedOrder.flatMap((key) => key === 'contact' ? ['reviews', key] : [key]) as Array<keyof typeof sections>
 
   return (
     <>
